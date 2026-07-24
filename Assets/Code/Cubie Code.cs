@@ -43,7 +43,7 @@ public class Cubie : MonoBehaviour
 
         // Movement
         Vector3 movement = (transform.forward * v) + (transform.right * h);
-        rb.velocity = new Vector3(movement.x, rb.velocity.y, movement.z);
+        rb.linearVelocity = new Vector3(movement.x, rb.linearVelocity.y, movement.z);
 
         // Log player position in Cubie script
 

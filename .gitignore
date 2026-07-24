@@ -10,3 +10,11 @@
 .vs/
 sysinfo.txt
 crashlytics-build.properties
+
+# Plastic SCM / Unity Version Control (we use Git, not Plastic)
+.plastic/
+/[Pp]lastic*/
+# IDE
+.vscode/
+.idea/
+.copilot/
