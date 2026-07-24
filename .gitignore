@@ -1,0 +1,12 @@
+# Unity auto-generated caches & build artifacts (safe to ignore — Unity rebuilds these)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+.vs/
+sysinfo.txt
+crashlytics-build.properties
