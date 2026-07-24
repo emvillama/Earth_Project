@@ -18,3 +18,9 @@ crashlytics-build.properties
 .vscode/
 .idea/
 .copilot/
+
+# Per-user editor state & generated solution files
+[Uu]serSettings/
+*.slnx
+# Plastic SCM leftover
+ignore.conf
