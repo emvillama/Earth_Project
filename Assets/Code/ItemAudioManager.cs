@@ -93,7 +93,5 @@ public class ItemAudioManager : MonoBehaviour
         float angle = Vector3.Angle(transform.forward, directionToListener);
         float t = Mathf.Clamp01(angle / maxAngle);
         audioSource.volume = Mathf.Lerp(maxVolumeWhenFacing, minVolumeWhenNotFacing, t);
-
-        Debug.Log($"Angle: {angle}, Volume: {audioSource.volume}");
     }
 }
