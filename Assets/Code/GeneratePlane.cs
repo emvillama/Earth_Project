@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Voxel : MonoBehaviour
+public class ItemSpawner : MonoBehaviour
 {
     public static int length = 150;
     public GameObject cube;
@@ -11,12 +11,9 @@ public class Voxel : MonoBehaviour
     public int detailScale = 8;
     public int noiseHeight = 3;
     private Vector3 startPos = Vector3.zero;
-    private Dictionary<Vector3, Tile> cubePos;
     private Dictionary<Vector3, Tile> itemPos;
     public int itemChance = 1;
-    public static int itemDivider = 40;
-    private int itemMax = 100; //(length * length) / itemDivider;
-    private static int yOffset = 5;
+    private int itemMax = 100;
 
     private bool IsInGrid(Vector3 position)
     {
@@ -36,23 +33,16 @@ public class Voxel : MonoBehaviour
 
     void Start()
     {
-        cubePos = new Dictionary<Vector3, Tile>();
         itemPos = new Dictionary<Vector3, Tile>();
-        GenerateTerrain(length);
+        ManageItems(Time.realtimeSinceStartup);
     }
 
     private void Update()
     {
         if (Mathf.Abs(XPlayerMove) >= 1 || Mathf.Abs(ZPlayerMove) >= 1)
         {
-            GenerateTerrain(length);
+            ManageItems(Time.realtimeSinceStartup);
         }
-    }
-
-    private void GenerateTerrain(int length)
-    {
-        float cTime = Time.realtimeSinceStartup;
-        ManageItems(cTime);
     }
 
     private void ManageItems(float cTime)
