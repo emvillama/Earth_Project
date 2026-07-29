@@ -11,10 +11,13 @@ with head-tracking headphones, for a hyper-real walk through multiple biomes.
 ## What already works (engine baseline)
 - **First-person controller** (`Cubie`) — mouse-look + WASD rigidbody movement.
 - **Proximity spawner** (`Voxel`/`GeneratePlane`) — keeps a grid centered on the
-  player, spawns up to ~100 sound-objects around you via Perlin noise, despawns them
-  out of range or after a short random life, respawns continuously.
-- **Per-object audio** (`ItemAudioManager`) — weighted-random clip selection + volume
-  by facing/direction to the listener.
+  player, spawns up to ~100 sound-objects around you, despawns them out of range or
+  after a short random life (5–10s), respawns continuously. *Accuracy note:* horizontal
+  placement is uniform-random (`Random.Range`); Perlin noise only sets each object's
+  *height*. Perlin-driven spawn **density** (clumps vs clearings) is a future realism
+  change, not current behavior.
+- **Per-object audio** (`ItemAudioManager`) — weighted-random clip selection
+  (`SelectRandomClip`, already implemented) + volume by facing/direction to the listener.
 - **Google Resonance Audio SDK** — 3D spatialization.
 - **Wildlife sound library** — Blue Jay, Junco, Woodpecker, Sparrow, crickets, ambient.
 
@@ -46,3 +49,12 @@ Birds · Wind/Leaves · River · Deer (noise/call) · Cicadas · Stick snap/crun
 
 > Originals preserved in `Assets/Sound Library/Brainstorming Docs/` and copied here for
 > versioned reference.
+
+## Refinements to make (captured 2026-07-29)
+- **Sound endings:** replace the current instant cutoff (objects `Destroy`ed at end of
+  their random life) with a **gradual fade-out** plus a short **reverb/effect tail** so
+  sounds don't stop abruptly. The reverb tail also doubles as a strong "I'm in a forest"
+  spatial cue. Fade can land as Stage 1 audio hygiene; richer reverb belongs in Stage 2.
+- **First biome fully specced:** `docs/biomes/Forest_v1.md` — Hunterdon Co. NJ hardwood
+  forest as hard numbers: ~25 audio profiles with rarity weights, audible radii, active
+  hours, a concurrency budget, terrain metrics, and time-of-day + weather modifiers.
