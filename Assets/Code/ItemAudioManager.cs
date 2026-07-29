@@ -19,28 +19,13 @@ public class ItemAudioManager : MonoBehaviour
     public float minVolumeWhenNotFacing = 0.2f;
     public float maxAngle = 60.0f;
 
-    private float maxAngleRad;
-
     void Awake()
     {
-        maxAngleRad = maxAngle * Mathf.Deg2Rad;
         audioSource = GetComponent<AudioSource>();
 
         if (audioSource == null)
         {
             Debug.LogError("AudioSource component is missing.");
-            return;
-        }
-
-        if (audioClips.Length > 0)
-        {
-            AudioClip randomClip = SelectRandomClip();
-            audioSource.clip = randomClip;
-            audioSource.Play();
-        }
-        else
-        {
-            Debug.LogWarning("No audio clips assigned to the ItemAudioManager script.");
         }
     }
 
@@ -49,7 +34,34 @@ public class ItemAudioManager : MonoBehaviour
         if (listener == null)
         {
             listener = Camera.main.transform;
-            Debug.Log("Listener assigned to main camera.");
+        }
+    }
+
+    // Called by the spawner each time this object is reused from the pool,
+    // after it has been repositioned. Picks a fresh weighted clip and plays it.
+    public void Play()
+    {
+        if (audioSource == null)
+        {
+            return;
+        }
+
+        if (audioClips.Length > 0)
+        {
+            audioSource.clip = SelectRandomClip();
+            audioSource.Play();
+        }
+        else
+        {
+            Debug.LogWarning("No audio clips assigned to the ItemAudioManager script.");
+        }
+    }
+
+    public void StopAudio()
+    {
+        if (audioSource != null)
+        {
+            audioSource.Stop();
         }
     }
 
@@ -57,7 +69,6 @@ public class ItemAudioManager : MonoBehaviour
     {
         if (audioSource == null || listener == null)
         {
-            Debug.LogError("AudioSource or listener is null.");
             return;
         }
 

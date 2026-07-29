@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 public class ItemSpawner : MonoBehaviour
 {
@@ -14,6 +15,9 @@ public class ItemSpawner : MonoBehaviour
     private Dictionary<Vector3, Tile> itemPos;
     public int itemChance = 1;
     private int itemMax = 100;
+
+    private ObjectPool<GameObject> pool;
+    private Transform mainCamera;
 
     private bool IsInGrid(Vector3 position)
     {
@@ -34,6 +38,23 @@ public class ItemSpawner : MonoBehaviour
     void Start()
     {
         itemPos = new Dictionary<Vector3, Tile>();
+        mainCamera = Camera.main != null ? Camera.main.transform : null;
+
+        // Reusable pool of sound-objects instead of Instantiate/Destroy churn.
+        pool = new ObjectPool<GameObject>(
+            createFunc: () =>
+            {
+                GameObject o = Instantiate(item, transform);
+                o.SetActive(false);
+                return o;
+            },
+            actionOnGet: o => o.SetActive(true),
+            actionOnRelease: o => o.SetActive(false),
+            actionOnDestroy: o => Destroy(o),
+            collectionCheck: false,
+            defaultCapacity: itemMax,
+            maxSize: itemMax * 2);
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
@@ -66,7 +87,7 @@ public class ItemSpawner : MonoBehaviour
             if (shouldDestroy)
             {
                 itemsToRemove.Add(loc);
-                Destroy(itemObject);
+                pool.Release(itemObject);
             }
             else
             {
@@ -98,15 +119,17 @@ public class ItemSpawner : MonoBehaviour
                 {
                     Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
 
-                    GameObject itemInstance = Instantiate(item, loc, randomRotation, transform);
+                    GameObject itemInstance = pool.Get();
+                    itemInstance.transform.SetPositionAndRotation(loc, randomRotation);
 
-                    // Ensure ItemAudioManager is added and initialized
+                    // Ensure ItemAudioManager is present, then (re)start its audio.
                     var audioManager = itemInstance.GetComponent<ItemAudioManager>();
                     if (audioManager == null)
                     {
                         audioManager = itemInstance.AddComponent<ItemAudioManager>();
                     }
-                    audioManager.listener = Camera.main.transform;
+                    audioManager.listener = mainCamera;
+                    audioManager.Play();
 
                     Tile o = new Tile(cTime, itemInstance);
                     newItemPos[loc] = o;
