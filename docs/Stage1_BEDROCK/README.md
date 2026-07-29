@@ -45,3 +45,14 @@ distance attenuation via Resonance rolloff.
 **Exit criteria:** stable frame time in-editor, no per-frame GC from spawning, no
 hot-path logging, capped voices, tunable SO config, fade-out on despawn, and a
 documented perf baseline.
+
+## Profiling baseline — captured 2026-07-29 (in-editor, SampleScene, steady state ~100 objects)
+| Metric | Baseline | Target after Stage 1 |
+|---|---|---|
+| GC Alloc / frame (`PlayerLoop`) | **12.9 KB** | ~0 KB (pooling) |
+| Game-loop CPU (`PlayerLoop`) | ~0.17 ms (trivial; frame dominated by EditorLoop overhead) | stay flat |
+| Playing audio voices | **47** (99 total sources, 52 paused, 6 clips) | ~16–20 (voice mgmt) |
+| Total Audio CPU / DSP | 4.4% / 3.2% | lower with voice cap |
+
+**Read:** frame time is fine; the real costs are **per-frame GC (the spawn churn)** and
+**voice count**. These two numbers are the yardstick for 1.2 (pooling) and 1.4 (voice mgmt).
