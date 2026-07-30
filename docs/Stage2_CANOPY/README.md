@@ -9,9 +9,12 @@ world feels real, not like one repeating clip.
   rather than self-recording (mic constraints). Drop clips into
   `Assets/Sound Library/Environments/Forest/*`; the nightly cleaner auto-formats them.
   Long-lead + gating for everything below — run it in the background starting now.
-- ☐ **2.1 Data-driven SoundObject system.** ScriptableObject definitions per object
-  type (clips, weights, spawn rules, lifetime, movement, height band). Everything below
-  becomes data, not new classes.
+- ☑ **2.1 Data-driven SoundObject system.** `SoundProfile` SO per species (clips, rarity
+  weight, maxConcurrent, height band, distance, lifetime, layer) + `BiomeProfileSet`
+  (`Forest`). ItemSpawner rolls the rarity table, respects per-profile caps, and
+  configures each spawn from its profile. Authored BlueJay/Junco/Sparrow/Woodpecker.
+  Adding a species = author an asset. (Assign `Forest` to ItemSpawner ▸ Biome to activate;
+  unassigned = fallback.)
 - ☐ **2.2 Bird system.** Species + **rarity tiers** (Common: Jay/Robin · Rare:
   Hawk/Falcon · Epic: Eagle). Spawn overhead, flight toward "trees"/ground, and
   behaviors: chirp, song, call-and-response between birds.

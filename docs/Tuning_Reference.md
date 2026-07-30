@@ -33,6 +33,24 @@ the experience; Low = what it changes in code._
 |---|---|---|
 | `audioClips[].weight` | How often each specific sound is picked relative to the others. | Weight in the cumulative weighted-random `SelectRandomClip`. |
 
+## SoundProfile assets (`Assets/SoundProfiles/*` — one per species, listed in `Forest`)
+
+| Knob | High level | Low level |
+|---|---|---|
+| `clips[]` + weights | The sound(s) this species makes, and how often each variant plays. | Weighted-random clip set handed to the spawned `ItemAudioManager`. |
+| `spawnWeight` | Rarity — how common this species is vs the others. | Weight in the spawner's rarity table when choosing what to spawn. |
+| `maxConcurrent` | How many of this species can call at once (a chorus vs a lone bird). | Hard cap on simultaneous live instances of the profile. |
+| `minHeight`/`maxHeight` | Where in space it lives — birds overhead, rustles at ground. | Random Y offset band above ground at spawn. |
+| `minDistance`/`audibleRadius` | How near/far this species can be heard (a crow carries, a rustle doesn't). | Per-source 3D rolloff distances, set at spawn from the profile. |
+| `lifetimeMin`/`lifetimeMax` | How long a call/event lasts before it moves on. | Random despawn time per instance. |
+| `layer` | Whether it's a discrete event or part of the ambient floor. | `Bed` profiles are skipped by discrete spawning (handled by 2.3). |
+
+## BiomeProfileSet asset (`Forest` → ItemSpawner ▸ Biome)
+
+| Knob | High level | Low level |
+|---|---|---|
+| `profiles[]` | The full cast of species for this biome. | Array the spawner's rarity table draws from; add a species by adding an entry. |
+
 ## VoiceManager (auto-created at runtime)
 
 | Knob | High level | Low level |
