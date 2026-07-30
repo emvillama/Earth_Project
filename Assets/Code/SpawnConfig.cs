@@ -26,4 +26,12 @@ public class SpawnConfig : ScriptableObject
     [Header("Fade (seconds)")]
     public float fadeInDuration = 0.05f;
     public float fadeOutDuration = 0.25f;
+
+    [Header("Distance (world units)")]
+    [Tooltip("Full volume within this distance.")]
+    public float minDistance = 3f;
+    [Tooltip("Heard out to here (AudioSource max distance). Keep < spawnRadius so sounds fade in as you approach.")]
+    public float audibleRadius = 80f;
+    [Tooltip("No discrete sounds spawn within this of the player (animals keep their distance).")]
+    public float playerExclusionRadius = 10f;
 }

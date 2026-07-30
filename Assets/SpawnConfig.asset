@@ -20,3 +20,6 @@ MonoBehaviour:
   maxVoices: 20
   fadeInDuration: 0.05
   fadeOutDuration: 0.25
+  minDistance: 3
+  audibleRadius: 80
+  playerExclusionRadius: 10

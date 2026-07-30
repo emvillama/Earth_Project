@@ -24,6 +24,9 @@ public class ItemSpawner : MonoBehaviour
     private int rndTimeMax = 10;
     private float fadeInDuration = 0.05f;
     private float fadeOutDuration = 0.25f;
+    private float minDistance = 3f;
+    private float audibleRadius = 80f;
+    private float playerExclusionRadius = 10f;
 
     private bool IsInGrid(Vector3 position)
     {
@@ -86,6 +89,9 @@ public class ItemSpawner : MonoBehaviour
         rndTimeMax = config.rndTimeMax;
         fadeInDuration = config.fadeInDuration;
         fadeOutDuration = config.fadeOutDuration;
+        minDistance = config.minDistance;
+        audibleRadius = config.audibleRadius;
+        playerExclusionRadius = config.playerExclusionRadius;
         VoiceManager.Instance.maxVoices = config.maxVoices;
     }
 
@@ -148,6 +154,15 @@ public class ItemSpawner : MonoBehaviour
                 (yNoise(x + XPlayerLocation, z + ZPlayerLocation, detailScale) * noiseHeight) + 10f,
                 z + ZPlayerLocation);
 
+            // Player exclusion bubble: animals keep their distance, so nothing spawns
+            // right on top of the player (horizontal distance).
+            float ex = loc.x - player.transform.position.x;
+            float ez = loc.z - player.transform.position.z;
+            if (ex * ex + ez * ez < playerExclusionRadius * playerExclusionRadius)
+            {
+                continue;
+            }
+
             if (!newItemPos.ContainsKey(loc))
             {
                 int rndIndex = Random.Range(0, 100);
@@ -168,6 +183,7 @@ public class ItemSpawner : MonoBehaviour
                     audioManager.spawner = this;
                     audioManager.fadeInDuration = fadeInDuration;
                     audioManager.fadeOutDuration = fadeOutDuration;
+                    audioManager.SetDistances(minDistance, audibleRadius);
                     audioManager.Play();
 
                     Tile o = new Tile(cTime, itemInstance, Random.Range(rndTimeMin, rndTimeMax));

@@ -131,6 +131,17 @@ public class ItemAudioManager : MonoBehaviour
         }
     }
 
+    // Set by the spawner from SpawnConfig: 3D rolloff distances (full volume within min,
+    // inaudible past max).
+    public void SetDistances(float min, float max)
+    {
+        if (audioSource != null)
+        {
+            audioSource.minDistance = min;
+            audioSource.maxDistance = max;
+        }
+    }
+
     void Update()
     {
         if (audioSource == null)
