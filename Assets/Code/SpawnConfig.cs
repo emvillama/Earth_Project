@@ -35,6 +35,12 @@ public class SpawnConfig : ScriptableObject
     [Tooltip("No discrete sounds spawn within this of the player (animals keep their distance).")]
     public float playerExclusionRadius = 10f;
 
+    [Header("Spawn pacing")]
+    [Tooltip("Min seconds between new spawns. Higher = calmer, more lulls.")]
+    public float spawnIntervalMin = 1.0f;
+    [Tooltip("Max seconds between new spawns.")]
+    public float spawnIntervalMax = 3.0f;
+
     [Header("Density (Perlin clustering)")]
     [Range(0f, 1f)]
     [Tooltip("0 = uniform spread, 1 = strong clumps and clearings.")]

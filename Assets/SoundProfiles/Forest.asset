@@ -27,3 +27,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5b082432d06701cf715e3fbade2d13e0, type: 2}
   - {fileID: 11400000, guid: 09f5140b16381bd494979159276c5533, type: 2}
   - {fileID: 11400000, guid: ac805852cd923aa6fcc7ba52f8c6102c, type: 2}
+  bedClip: {fileID: 8300000, guid: 8a08196c19572b4961b5e47a8711cb64, type: 3}
+  bedVolume: 0.45
+  bedCrossfade: 2

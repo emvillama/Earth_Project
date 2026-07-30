@@ -25,3 +25,5 @@ MonoBehaviour:
   playerExclusionRadius: 10
   densityContrast: 0.5
   densityScale: 40
+  spawnIntervalMin: 1
+  spawnIntervalMax: 3

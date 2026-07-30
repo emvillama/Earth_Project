@@ -32,6 +32,11 @@ public class ItemSpawner : MonoBehaviour
     private float densityScale = 40f;
     private const float DensityOffset = 3137f; // decorrelate density noise from height noise
     private readonly Dictionary<SoundProfile, int> activeCounts = new Dictionary<SoundProfile, int>();
+    private float spawnIntervalMin = 1.0f;
+    private float spawnIntervalMax = 3.0f;
+    private const float ManageInterval = 0.3f;
+    private float manageTimer = 0f;
+    private float nextSpawnTime = 0f;
 
     private bool IsInGrid(Vector3 position)
     {
@@ -70,13 +75,24 @@ public class ItemSpawner : MonoBehaviour
             defaultCapacity: itemMax,
             maxSize: itemMax * 2);
 
+        // Continuous ambient floor for this biome (wind/insects), if one is set.
+        if (biome != null && biome.bedClip != null)
+        {
+            var bedGo = new GameObject("AmbientBed");
+            bedGo.AddComponent<AmbientBed>().Init(biome.bedClip, biome.bedVolume, biome.bedCrossfade);
+        }
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
     private void Update()
     {
-        if (Mathf.Abs(XPlayerMove) >= 1 || Mathf.Abs(ZPlayerMove) >= 1)
+        // Run management on a steady tick (not gated on movement) so paced spawning and
+        // despawns happen whether the player is walking or standing still.
+        manageTimer += Time.deltaTime;
+        if (manageTimer >= ManageInterval)
         {
+            manageTimer = 0f;
             ManageItems(Time.realtimeSinceStartup);
         }
     }
@@ -99,6 +115,8 @@ public class ItemSpawner : MonoBehaviour
         playerExclusionRadius = config.playerExclusionRadius;
         densityContrast = config.densityContrast;
         densityScale = config.densityScale;
+        spawnIntervalMin = config.spawnIntervalMin;
+        spawnIntervalMax = config.spawnIntervalMax;
         VoiceManager.Instance.maxVoices = config.maxVoices;
     }
 
@@ -206,88 +224,96 @@ public class ItemSpawner : MonoBehaviour
             itemPos.Remove(loc);
         }
 
-        int currentItemCount = newItemPos.Count;
-        int itemsToSpawn = itemMax - currentItemCount;
+        // Paced spawning: at most one new sound per spawn interval (up to itemMax), so the
+        // forest has natural ebb and flow instead of a nonstop wall of sound.
+        if (Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
+        {
+            if (TrySpawnOne(cTime, newItemPos))
+            {
+                nextSpawnTime = Time.time + Random.Range(spawnIntervalMin, spawnIntervalMax);
+            }
+        }
 
-        for (int i = 0; i < itemsToSpawn; i++)
+        itemPos = newItemPos;
+    }
+
+    // Attempt a single spawn: find a valid spot (outside the player bubble, density-weighted)
+    // and a profile under its cap, configure it, and play. Returns true if it spawned.
+    private bool TrySpawnOne(float cTime, Dictionary<Vector3, Tile> map)
+    {
+        for (int attempt = 0; attempt < 10; attempt++)
         {
             int x = Random.Range(-length, length);
             int z = Random.Range(-length, length);
-            Vector3 loc = new Vector3(x + XPlayerLocation,
-                (yNoise(x + XPlayerLocation, z + ZPlayerLocation, detailScale) * noiseHeight) + 10f,
-                z + ZPlayerLocation);
+            float groundY = (yNoise(x + XPlayerLocation, z + ZPlayerLocation, detailScale) * noiseHeight) + 10f;
+            Vector3 loc = new Vector3(x + XPlayerLocation, groundY, z + ZPlayerLocation);
 
-            // Player exclusion bubble: animals keep their distance, so nothing spawns
-            // right on top of the player (horizontal distance).
             float ex = loc.x - player.transform.position.x;
             float ez = loc.z - player.transform.position.z;
             if (ex * ex + ez * ez < playerExclusionRadius * playerExclusionRadius)
             {
                 continue;
             }
-
-            if (!newItemPos.ContainsKey(loc))
+            if (map.ContainsKey(loc))
             {
-                // Perlin density: life clusters into pockets instead of spreading evenly.
-                // densityMul averages ~1 so overall spawn rate is preserved; contrast
-                // controls how clumpy vs uniform it is.
-                float density = Mathf.PerlinNoise((loc.x + DensityOffset) / densityScale,
-                                                  (loc.z + DensityOffset) / densityScale);
-                float densityMul = Mathf.Lerp(1f, density * 2f, densityContrast);
-                if (Random.Range(0f, 100f) < itemChance * densityMul)
-                {
-                    // Pick which species spawns here (rarity table + per-profile cap).
-                    SoundProfile profile = SelectProfile();
-                    if (HasBiome() && profile == null)
-                    {
-                        continue; // biome active but every profile is at its concurrency cap
-                    }
-
-                    float groundY = loc.y;
-                    if (profile != null)
-                    {
-                        loc.y = groundY + Random.Range(profile.minHeight, profile.maxHeight);
-                    }
-
-                    Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
-                    GameObject itemInstance = pool.Get();
-                    itemInstance.transform.SetPositionAndRotation(loc, randomRotation);
-
-                    // Ensure ItemAudioManager is present, then configure + (re)start its audio.
-                    var audioManager = itemInstance.GetComponent<ItemAudioManager>();
-                    if (audioManager == null)
-                    {
-                        audioManager = itemInstance.AddComponent<ItemAudioManager>();
-                    }
-                    audioManager.listener = mainCamera;
-                    audioManager.spawner = this;
-                    audioManager.fadeInDuration = fadeInDuration;
-                    audioManager.fadeOutDuration = fadeOutDuration;
-
-                    float life;
-                    if (profile != null)
-                    {
-                        audioManager.audioClips = profile.clips;
-                        audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
-                        life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
-                        ChangeCount(profile, 1);
-                    }
-                    else
-                    {
-                        audioManager.SetDistances(minDistance, audibleRadius);
-                        life = Random.Range(rndTimeMin, rndTimeMax);
-                    }
-                    audioManager.Play();
-
-                    Tile o = new Tile(cTime, itemInstance, life);
-                    o.audioManager = audioManager;
-                    o.profile = profile;
-                    newItemPos[loc] = o;
-                }
+                continue;
             }
-        }
 
-        itemPos = newItemPos;
+            // Perlin density-weighted acceptance: life clusters into pockets vs clearings.
+            float density = Mathf.PerlinNoise((loc.x + DensityOffset) / densityScale,
+                                              (loc.z + DensityOffset) / densityScale);
+            float densityMul = Mathf.Lerp(1f, density * 2f, densityContrast); // avg ~1
+            if (Random.Range(0f, 2f) > densityMul)
+            {
+                continue;
+            }
+
+            SoundProfile profile = SelectProfile();
+            if (HasBiome() && profile == null)
+            {
+                continue; // every profile at its cap right now
+            }
+            if (profile != null)
+            {
+                loc.y = groundY + Random.Range(profile.minHeight, profile.maxHeight);
+            }
+
+            Quaternion rot = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+            GameObject itemInstance = pool.Get();
+            itemInstance.transform.SetPositionAndRotation(loc, rot);
+
+            var audioManager = itemInstance.GetComponent<ItemAudioManager>();
+            if (audioManager == null)
+            {
+                audioManager = itemInstance.AddComponent<ItemAudioManager>();
+            }
+            audioManager.listener = mainCamera;
+            audioManager.spawner = this;
+            audioManager.fadeInDuration = fadeInDuration;
+            audioManager.fadeOutDuration = fadeOutDuration;
+
+            float life;
+            if (profile != null)
+            {
+                audioManager.audioClips = profile.clips;
+                audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
+                life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
+                ChangeCount(profile, 1);
+            }
+            else
+            {
+                audioManager.SetDistances(minDistance, audibleRadius);
+                life = Random.Range(rndTimeMin, rndTimeMax);
+            }
+            audioManager.Play();
+
+            Tile o = new Tile(cTime, itemInstance, life);
+            o.audioManager = audioManager;
+            o.profile = profile;
+            map[loc] = o;
+            return true;
+        }
+        return false;
     }
 
     private class Tile
