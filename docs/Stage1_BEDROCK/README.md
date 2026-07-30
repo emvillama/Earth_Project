@@ -21,10 +21,11 @@ new gets built on shaky base scripts. Everything here also sets up mobile viabil
   per-frame spawn budget (minor perf).
 - ☑ **1.4 Audio voice management.** `VoiceManager` caps ~20 concurrent voices,
   distance-priority pause/unpause every 0.25s. (Baseline was 47 voices.)
-- ◐ **1.5 Player controller polish.** *Done:* walk speed halved (50→25). *Still TODO:*
-  wrap `Cubie`'s direct `Input.GetAxis` behind an interface so Stage 4 (phone sensors)
-  can swap it cleanly; ground check / walk-vs-fly / collision — partly design-dependent
-  (terrain is currently stubbed, so collision is moot until we decide on ground).
+- ◐ **1.5 Player controller / input.** *Decisions locked (see VISION principle):*
+  movement is **walking**; **no terrain, no collision** — it's augmented audio over real
+  movement, so ground/collision are non-goals, dropped. *Done:* speed 50→25. *Remaining:*
+  wrap `Cubie`'s `Input.GetAxis` behind an input interface (`IInputSource`) so Stage 4 can
+  swap keyboard → GPS/motion cleanly. Editor movement is just a stand-in for real position.
 - ☑ **1.6 Config via ScriptableObjects.** `SpawnConfig` SO + `SpawnConfig.asset` hold
   every knob: itemMax, itemChance, spawnRadius, rndTime range, maxVoices, fade in/out,
   min/audible distance, exclusion radius. `ItemSpawner` reads it (falls back to defaults

@@ -8,6 +8,20 @@ water, and wildlife positioned convincingly around you. The endgame is a phone a
 that turns your real-world movement and head orientation into the controller, paired
 with head-tracking headphones, for a hyper-real walk through multiple biomes.
 
+## Design principle — augmented audio over the real world
+Earth is **not a virtual world you look at; it's an audio layer over real movement.** The
+endgame is walking to work (or anywhere) in the real world while the soundscape generates
+around you from your real position and heading (Stage 4 GPS/motion). Decisions this locks
+in *now*:
+- **Movement is walking. No visual terrain, no collision.** Colliding with a virtual tree
+  you can't see while walking a real sidewalk would *break* realism, not add it. Movement
+  is unconstrained.
+- **The environment adapts around the player**, never the reverse — sources spawn/despawn
+  and fade relative to wherever the player is (see the player-exclusion "donut of sound"
+  and Perlin-density spawning in BEDROCK 1.3).
+- In-editor keyboard/mouse movement is only a **stand-in** for real-world GPS/motion —
+  nothing should assume a bounded, collidable 3D level.
+
 ## What already works (engine baseline)
 - **First-person controller** (`Cubie`) — mouse-look + WASD rigidbody movement.
 - **Proximity spawner** (`Voxel`/`GeneratePlane`) — keeps a grid centered on the
