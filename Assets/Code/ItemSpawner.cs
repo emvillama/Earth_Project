@@ -66,6 +66,12 @@ public class ItemSpawner : MonoBehaviour
         }
     }
 
+    // Called by ItemAudioManager once its fade-out completes.
+    public void ReleaseToPool(GameObject o)
+    {
+        pool.Release(o);
+    }
+
     private void ManageItems(float cTime)
     {
         var newItemPos = new Dictionary<Vector3, Tile>();
@@ -87,7 +93,14 @@ public class ItemSpawner : MonoBehaviour
             if (shouldDestroy)
             {
                 itemsToRemove.Add(loc);
-                pool.Release(itemObject);
+                if (kvp.Value.audioManager != null)
+                {
+                    kvp.Value.audioManager.FadeOutAndRelease();
+                }
+                else
+                {
+                    pool.Release(itemObject);
+                }
             }
             else
             {
@@ -129,9 +142,11 @@ public class ItemSpawner : MonoBehaviour
                         audioManager = itemInstance.AddComponent<ItemAudioManager>();
                     }
                     audioManager.listener = mainCamera;
+                    audioManager.spawner = this;
                     audioManager.Play();
 
                     Tile o = new Tile(cTime, itemInstance);
+                    o.audioManager = audioManager;
                     newItemPos[loc] = o;
                 }
             }
@@ -144,6 +159,7 @@ public class ItemSpawner : MonoBehaviour
     {
         public float cTimestamp;
         public GameObject tileObject;
+        public ItemAudioManager audioManager;
         public float activationTime;
         public int rndTime;
 

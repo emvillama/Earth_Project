@@ -14,11 +14,21 @@ public class ItemAudioManager : MonoBehaviour
     public WeightedAudioClip[] audioClips;
     private AudioSource audioSource;
     public Transform listener;
+    public ItemSpawner spawner;
 
     public float maxVolumeWhenFacing = 1.0f;
     public float minVolumeWhenNotFacing = 0.2f;
     public float maxAngle = 60.0f;
+    public float fadeInDuration = 0.05f;  // fast: declick without dulling call attacks
+    public float fadeOutDuration = 0.25f; // smooth: no abrupt cutoffs
 
+    // Envelope: final volume = facingVolume * fade. Fade eases 0..1 on spawn, voice-cull,
+    // and despawn so nothing snaps on/off.
+    private float facingVolume = 1f;
+    private float fade = 0f;
+    private float fadeTarget = 0f;
+    private bool releasing = false;      // fade out then return to pool
+    private bool pauseWhenSilent = false; // culled voice: pause once silent (frees the voice)
     private bool audible = true;
 
     void Awake()
@@ -39,8 +49,8 @@ public class ItemAudioManager : MonoBehaviour
         }
     }
 
-    // Called by the spawner each time this object is reused from the pool,
-    // after it has been repositioned. Picks a fresh weighted clip and plays it.
+    // Called by the spawner each time this object is reused from the pool, after it has
+    // been repositioned. Picks a fresh weighted clip and fades it in.
     public void Play()
     {
         if (audioSource == null)
@@ -48,16 +58,74 @@ public class ItemAudioManager : MonoBehaviour
             return;
         }
 
-        if (audioClips.Length > 0)
+        if (audioClips.Length == 0)
         {
-            audioSource.clip = SelectRandomClip();
-            audioSource.Play();
-            audible = true;
-            VoiceManager.Instance.Register(this);
+            Debug.LogWarning("No audio clips assigned to the ItemAudioManager script.");
+            return;
+        }
+
+        releasing = false;
+        pauseWhenSilent = false;
+        audible = true;
+        fade = 0f;
+        fadeTarget = 1f;
+        facingVolume = maxVolumeWhenFacing;
+
+        audioSource.volume = 0f;
+        audioSource.clip = SelectRandomClip();
+        audioSource.Play();
+        VoiceManager.Instance.Register(this);
+    }
+
+    // Called by the VoiceManager: fade out + pause when we're not one of the nearest
+    // voices, fade back in when we are.
+    public void SetAudible(bool value)
+    {
+        if (audioSource == null || releasing || value == audible)
+        {
+            return;
+        }
+        audible = value;
+
+        if (value)
+        {
+            if (!audioSource.isPlaying)
+            {
+                audioSource.UnPause();
+            }
+            pauseWhenSilent = false;
+            fadeTarget = 1f;
         }
         else
         {
-            Debug.LogWarning("No audio clips assigned to the ItemAudioManager script.");
+            pauseWhenSilent = true;
+            fadeTarget = 0f;
+        }
+    }
+
+    // Called by the spawner on despawn: fade out, then return to the pool.
+    public void FadeOutAndRelease()
+    {
+        releasing = true;
+        fadeTarget = 0f;
+        VoiceManager.UnregisterSafe(this);
+        if (audioSource == null || fade <= 0.001f)
+        {
+            DoRelease();
+        }
+    }
+
+    private void DoRelease()
+    {
+        releasing = false;
+        VoiceManager.UnregisterSafe(this);
+        if (spawner != null)
+        {
+            spawner.ReleaseToPool(gameObject);
+        }
+        else
+        {
+            gameObject.SetActive(false);
         }
     }
 
@@ -70,39 +138,47 @@ public class ItemAudioManager : MonoBehaviour
         }
     }
 
-    // Called by the VoiceManager: pause when we're not one of the nearest voices,
-    // resume (mid-sound) when we are.
-    public void SetAudible(bool value)
+    void Update()
     {
-        if (audioSource == null || value == audible)
+        if (audioSource == null)
         {
             return;
         }
-        audible = value;
 
-        if (value)
+        if (fade != fadeTarget)
         {
-            audioSource.UnPause();
+            float dur = (fadeTarget > fade) ? fadeInDuration : fadeOutDuration;
+            float step = (dur <= 0f) ? 1f : (Time.deltaTime / dur);
+            fade = Mathf.MoveTowards(fade, fadeTarget, step);
         }
-        else
+
+        if (listener != null)
         {
-            audioSource.Pause();
+            UpdateFacingVolume();
+        }
+
+        if (audioSource.isPlaying)
+        {
+            audioSource.volume = facingVolume * fade;
+        }
+
+        if (fade <= 0.0001f)
+        {
+            if (releasing)
+            {
+                DoRelease();
+                return;
+            }
+            if (pauseWhenSilent && audioSource.isPlaying)
+            {
+                audioSource.Pause();
+            }
         }
     }
 
     void OnDisable()
     {
         VoiceManager.UnregisterSafe(this);
-    }
-
-    void Update()
-    {
-        if (audioSource == null || listener == null)
-        {
-            return;
-        }
-
-        AdjustVolumeBasedOnListenerPosition();
     }
 
     private AudioClip SelectRandomClip()
@@ -128,11 +204,11 @@ public class ItemAudioManager : MonoBehaviour
         return audioClips[0].clip;
     }
 
-    private void AdjustVolumeBasedOnListenerPosition()
+    private void UpdateFacingVolume()
     {
         Vector3 directionToListener = (listener.position - transform.position).normalized;
         float angle = Vector3.Angle(transform.forward, directionToListener);
         float t = Mathf.Clamp01(angle / maxAngle);
-        audioSource.volume = Mathf.Lerp(maxVolumeWhenFacing, minVolumeWhenNotFacing, t);
+        facingVolume = Mathf.Lerp(maxVolumeWhenFacing, minVolumeWhenNotFacing, t);
     }
 }
