@@ -24,8 +24,10 @@ world feels real, not like one repeating clip.
     (spawn-near-neighbor bias) instead of firing sporadically everywhere.
   - Spawn height / overhead flight behaviors.
   *Note: this is the top realism lever after the bed — worth doing right after 2.3.*
-- ☐ **2.3 Wind & leaves.** Continuous ambient layer with variable strength; wind near
-  head height, leaves near ground; fade in/out (no abrupt cut). Weather hook for later.
+- ◐ **2.3 Wind & leaves / ambient bed.** *Done:* `AmbientBed` — continuous dual-source
+  **crossfade loop** (2D, never cuts out), auto-created from `biome.bedClip` (Connecticut
+  forest ambience wired in). *Later:* variable strength + weather hook, separate
+  leaf-vs-wind height layers. **← this completes Checkpoint C1.**
 - ☐ **2.4 River / water.** Multiple layered river sources by "strength," fish splashes,
   player-in-water footsteps, location-anchored (stays put once encountered).
 - ☐ **2.5 Player footsteps & foliage SFX.** Player movement drives sound: **leaf

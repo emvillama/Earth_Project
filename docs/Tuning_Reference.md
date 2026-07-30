@@ -19,6 +19,7 @@ the experience; Low = what it changes in code._
 | `playerExclusionRadius` | The hush right around you — animals keep their distance. | No discrete spawns within this horizontal distance of the player. |
 | `densityContrast` | Clumps-and-clearings vs even spread (realism of patchiness). | Blends spawn probability toward a Perlin field; 0 = uniform, 1 = strong clustering. |
 | `densityScale` | Size of the lively/quiet pockets you walk through. | World-unit scale of the density Perlin noise (bigger = broader pockets). |
+| `spawnIntervalMin`/`Max` | Pacing — how often new sounds appear; higher = calmer with more lulls. | Random seconds between paced single spawns (one per interval, up to itemMax). |
 
 ## Player (Cubie component on the player object)
 
@@ -50,6 +51,9 @@ the experience; Low = what it changes in code._
 | Knob | High level | Low level |
 |---|---|---|
 | `profiles[]` | The full cast of species for this biome. | Array the spawner's rarity table draws from; add a species by adding an entry. |
+| `bedClip` | The continuous ambient floor (wind/insects) for this biome. | Clip the `AmbientBed` crossfade-loops; empty = no bed. |
+| `bedVolume` | How loud the floor sits under the discrete sounds. | AmbientBed target volume (2D). |
+| `bedCrossfade` | Seamlessness of the loop. | Crossfade seconds at the loop point. |
 
 ## VoiceManager (auto-created at runtime)
 
