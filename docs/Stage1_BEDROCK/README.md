@@ -30,15 +30,15 @@ new gets built on shaky base scripts. Everything here also sets up mobile viabil
   CANOPY.**
 - ☑ **1.7 Profiling baseline.** Recorded 2026-07-29 (see table below): 12.9 KB/frame GC,
   47 voices — the yardstick for later stages.
-- ☐ **1.8 Audio hygiene — fade-out.** Replace the instant despawn cutoff with a gradual
-  fade-out (envelope release), and fade the voice-manager's cull pause/unpause so sounds
-  ease in/out instead of snapping. Rides on 1.2's despawn path. Richer reverb tail is
-  Stage 2. **← next up.**
+- ☑ **1.8 Audio hygiene — fade-out.** `ItemAudioManager` envelope: fast fade-in (0.05s,
+  preserves attacks) + smooth fade-out (0.25s) on despawn and voice-cull. Confirmed good.
 
-**Progress (2026-07-30):** 1.0, 1.1, 1.2, 1.4, 1.7 done + pushed. Bonus done: all 5
-runtime clips noise-gated/denoised + a nightly auto-clean pipeline. **Remaining: 1.3**
-(needs the spawn-model design call), **1.5** (input abstraction + ground/collision,
-partly design-dependent), **1.6** (ScriptableObject config), **1.8** (fade-out — next).
+**Progress (2026-07-30):** 1.0, 1.1, 1.2, 1.4, 1.7, 1.8 done + pushed. Bonus done: audio
+clips noise-gated/denoised + nightly auto-clean pipeline; **fixed Item prefab that was
+loading UNFINISHED/junk clips → repointed to finished set**; **removed unused Resonance
+SDK** (spatializer is Meta XR Audio; 0 refs). **Remaining: 1.3** (spawn-model design
+call), **1.5** (input abstraction + ground/collision, partly design-dependent), **1.6**
+(ScriptableObject config — next mechanical item, and the CANOPY handoff).
 
 **Already implemented (reuse, don't rebuild):** weighted clip selection
 (`ItemAudioManager.SelectRandomClip`), a global object cap (`itemMax`), engine-level
