@@ -14,18 +14,17 @@ new gets built on shaky base scripts. Everything here also sets up mobile viabil
   the stubbed `GenerateTerrain`).
 - ☑ **1.2 Object pooling.** Replaced `Instantiate`/`Destroy` churn with
   `UnityEngine.Pool.ObjectPool` (get/reposition on spawn, release on despawn).
-- ◐ **1.3 Deterministic, frame-budgeted spawning.** *Done:* spawn cap 100→40; **player
-  exclusion radius** (10, no spawns on top of player) + **decoupled audible radius** (80,
-  < spawnRadius 150 so sounds fade in as you approach). *Still open:* the **design call**
-  — uniform-random vs Perlin-driven *density* (clumps vs clearings); and a steady
-  per-frame spawn budget (minor perf).
+- ☑ **1.3 Spawn model.** Spawn cap 100→40; **player exclusion radius** (10) + **decoupled
+  audible radius** (80 < spawnRadius 150, so sounds fade in as you approach); **Perlin-
+  driven density** (`densityContrast`/`densityScale`) so life clusters into pockets
+  instead of spreading evenly. (Optional steady per-frame spawn budget deferred — not
+  needed at current scale.)
 - ☑ **1.4 Audio voice management.** `VoiceManager` caps ~20 concurrent voices,
   distance-priority pause/unpause every 0.25s. (Baseline was 47 voices.)
-- ◐ **1.5 Player controller / input.** *Decisions locked (see VISION principle):*
-  movement is **walking**; **no terrain, no collision** — it's augmented audio over real
-  movement, so ground/collision are non-goals, dropped. *Done:* speed 50→25. *Remaining:*
-  wrap `Cubie`'s `Input.GetAxis` behind an input interface (`IInputSource`) so Stage 4 can
-  swap keyboard → GPS/motion cleanly. Editor movement is just a stand-in for real position.
+- ☑ **1.5 Player controller / input.** Movement = **walking**; **no terrain/collision**
+  (non-goals per VISION principle). Speed 50→25. Input wrapped behind `IInputSource`
+  (`KeyboardMouseInputSource` now, auto-added; Stage 4 swaps in a GPS/motion source with
+  zero controller changes).
 - ☑ **1.6 Config via ScriptableObjects.** `SpawnConfig` SO + `SpawnConfig.asset` hold
   every knob: itemMax, itemChance, spawnRadius, rndTime range, maxVoices, fade in/out,
   min/audible distance, exclusion radius. `ItemSpawner` reads it (falls back to defaults
@@ -39,9 +38,9 @@ new gets built on shaky base scripts. Everything here also sets up mobile viabil
 done. Bonus: audio clips noise-gated/denoised + nightly auto-clean pipeline; **fixed Item
 prefab loading UNFINISHED/junk clips**; **removed unused Resonance SDK**; **realism pass**
 (dropped fake facing-volume — loudness is distance now); **player exclusion + audible
-radius** ("donut of sound" that travels with you). **Remaining: the two design calls —
-1.3** (uniform-random vs Perlin density) and **1.5-movement** (walk-vs-fly / terrain).
-Input-abstraction half of 1.5 (wrap `Input.GetAxis` for Stage 4) still to do.
+radius** ("donut of sound" that travels with you). **All substages done — BEDROCK COMPLETE (2026-07-30).**
+Next: Stage 2 CANOPY (2.0 audio-library haul is the long-lead starter). Every tunable
+value is catalogued in `docs/Tuning_Reference.md`.
 
 **Already implemented (reuse, don't rebuild):** weighted clip selection
 (`ItemAudioManager.SelectRandomClip`), a global object cap (`itemMax`), engine-level
