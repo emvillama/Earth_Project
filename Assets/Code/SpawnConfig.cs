@@ -34,4 +34,11 @@ public class SpawnConfig : ScriptableObject
     public float audibleRadius = 80f;
     [Tooltip("No discrete sounds spawn within this of the player (animals keep their distance).")]
     public float playerExclusionRadius = 10f;
+
+    [Header("Density (Perlin clustering)")]
+    [Range(0f, 1f)]
+    [Tooltip("0 = uniform spread, 1 = strong clumps and clearings.")]
+    public float densityContrast = 0.5f;
+    [Tooltip("Patch size in world units; bigger = broader pockets of life.")]
+    public float densityScale = 40f;
 }

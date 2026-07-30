@@ -27,6 +27,9 @@ public class ItemSpawner : MonoBehaviour
     private float minDistance = 3f;
     private float audibleRadius = 80f;
     private float playerExclusionRadius = 10f;
+    private float densityContrast = 0.5f;
+    private float densityScale = 40f;
+    private const float DensityOffset = 3137f; // decorrelate density noise from height noise
 
     private bool IsInGrid(Vector3 position)
     {
@@ -92,6 +95,8 @@ public class ItemSpawner : MonoBehaviour
         minDistance = config.minDistance;
         audibleRadius = config.audibleRadius;
         playerExclusionRadius = config.playerExclusionRadius;
+        densityContrast = config.densityContrast;
+        densityScale = config.densityScale;
         VoiceManager.Instance.maxVoices = config.maxVoices;
     }
 
@@ -165,8 +170,13 @@ public class ItemSpawner : MonoBehaviour
 
             if (!newItemPos.ContainsKey(loc))
             {
-                int rndIndex = Random.Range(0, 100);
-                if (rndIndex <= itemChance)
+                // Perlin density: life clusters into pockets instead of spreading evenly.
+                // densityMul averages ~1 so overall spawn rate is preserved; contrast
+                // controls how clumpy vs uniform it is.
+                float density = Mathf.PerlinNoise((loc.x + DensityOffset) / densityScale,
+                                                  (loc.z + DensityOffset) / densityScale);
+                float densityMul = Mathf.Lerp(1f, density * 2f, densityContrast);
+                if (Random.Range(0f, 100f) < itemChance * densityMul)
                 {
                     Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
 

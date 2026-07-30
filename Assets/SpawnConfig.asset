@@ -23,3 +23,5 @@ MonoBehaviour:
   minDistance: 3
   audibleRadius: 80
   playerExclusionRadius: 10
+  densityContrast: 0.5
+  densityScale: 40

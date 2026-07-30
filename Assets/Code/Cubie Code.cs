@@ -9,6 +9,7 @@ public class Cubie : MonoBehaviour
     float cameraVertRotation = 0f;
     public int playerSpeed = 5;
     private Rigidbody rb;
+    private IInputSource input;
 
     void Start()
     {
@@ -16,22 +17,26 @@ public class Cubie : MonoBehaviour
         Cursor.visible = false;
         Cursor.lockState = CursorLockMode.Locked;
 
+        // Input behind an interface (Stage 4 swaps keyboard for GPS/motion). Auto-adds the
+        // keyboard/mouse source if none is present, so no scene wiring is needed.
+        input = GetComponent<IInputSource>();
+        if (input == null)
+        {
+            input = gameObject.AddComponent<KeyboardMouseInputSource>();
+        }
+
         if (cameraTransform == null)
         {
             Debug.LogError("Camera Transform is not assigned!");
-        }
-        else
-        {
-            Debug.Log("Camera Transform assigned correctly.");
         }
     }
 
     void Update()
     {
-        float h = Input.GetAxis("Horizontal") * playerSpeed;
-        float v = Input.GetAxis("Vertical") * playerSpeed;
-        float inputX = Input.GetAxis("Mouse X") * mouseSens;
-        float inputY = Input.GetAxis("Mouse Y") * mouseSens;
+        float h = input.Horizontal * playerSpeed;
+        float v = input.Vertical * playerSpeed;
+        float inputX = input.LookX * mouseSens;
+        float inputY = input.LookY * mouseSens;
 
         // Handle vertical rotation (up and down)
         cameraVertRotation -= inputY;
@@ -44,8 +49,5 @@ public class Cubie : MonoBehaviour
         // Movement
         Vector3 movement = (transform.forward * v) + (transform.right * h);
         rb.linearVelocity = new Vector3(movement.x, rb.linearVelocity.y, movement.z);
-
-        // Log player position in Cubie script
-
     }
 }
