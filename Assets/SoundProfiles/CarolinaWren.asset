@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ac04169a118b38914912f5d2ebd4f29, type: 3}
+  m_Name: CarolinaWren
+  m_EditorClassIdentifier:
+  displayName: CarolinaWren
+  layer: 1
+  clips:
+  - clip: {fileID: 8300000, guid: f36f94cb75610ac3097623ce7a8b4021, type: 3}
+    weight: 1
+  spawnWeight: 4
+  maxConcurrent: 1
+  minHeight: 1
+  maxHeight: 6
+  minDistance: 3
+  audibleRadius: 90
+  lifetimeMin: 5
+  lifetimeMax: 9
