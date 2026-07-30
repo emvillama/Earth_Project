@@ -120,17 +120,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioClips:
-  - clip: {fileID: 8300000, guid: 852b2087ad465514d98df0fc9bc4f6f1, type: 3}
+  - clip: {fileID: 8300000, guid: 9e48d0b36fd080e42a08ea926d923b7e, type: 3}
     weight: 0.1
-  - clip: {fileID: 8300000, guid: eba853958fcd3e34e9d4409c08ae767c, type: 3}
-    weight: 0.3
-  - clip: {fileID: 8300000, guid: 34ade9fe46bd94a4482c170ac0523ae6, type: 3}
+  - clip: {fileID: 8300000, guid: c3b8ba75bc9babe4ca10ad8f4ab71217, type: 3}
     weight: 0.4
-  - clip: {fileID: 8300000, guid: bcc85cce9d9dc3c4bae28b3901ec4965, type: 3}
+  - clip: {fileID: 8300000, guid: 393e61f06e2ee5c458c615d0d8886ac4, type: 3}
     weight: 1
-  - clip: {fileID: 8300000, guid: 22964a2b008384f4293c72787a625bee, type: 3}
+  - clip: {fileID: 8300000, guid: 9b3cf053a3bb1d647a3224521ff3483b, type: 3}
     weight: 0.6
-  - clip: {fileID: 8300000, guid: 6c4653bd9fb902d4bb269e812d7ad615, type: 3}
+  - clip: {fileID: 8300000, guid: 5182176d784d6bc4a835b8e4f739b4b8, type: 3}
     weight: 0.8
   listener: {fileID: 1710126956541170682, guid: 50dc570655dd4c64ba642360ba186f5f, type: 3}
   maxVolumeWhenFacing: 1
