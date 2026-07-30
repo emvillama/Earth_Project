@@ -14,7 +14,7 @@ public class ItemSpawner : MonoBehaviour
     private Vector3 startPos = Vector3.zero;
     private Dictionary<Vector3, Tile> itemPos;
     public int itemChance = 1;
-    private int itemMax = 100;
+    public int itemMax = 40;
 
     private ObjectPool<GameObject> pool;
     private Transform mainCamera;
