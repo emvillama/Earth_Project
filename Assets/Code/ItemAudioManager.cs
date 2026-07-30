@@ -16,15 +16,12 @@ public class ItemAudioManager : MonoBehaviour
     public Transform listener;
     public ItemSpawner spawner;
 
-    public float maxVolumeWhenFacing = 1.0f;
-    public float minVolumeWhenNotFacing = 0.2f;
-    public float maxAngle = 60.0f;
     public float fadeInDuration = 0.05f;  // fast: declick without dulling call attacks
     public float fadeOutDuration = 0.25f; // smooth: no abrupt cutoffs
 
-    // Envelope: final volume = facingVolume * fade. Fade eases 0..1 on spawn, voice-cull,
-    // and despawn so nothing snaps on/off.
-    private float facingVolume = 1f;
+    // Envelope only. Loudness + direction come from the AudioSource's own 3D rolloff and
+    // spatialization (realistic: distance sets volume, not head facing). fade eases 0..1
+    // on spawn, voice-cull, and despawn so nothing snaps on/off.
     private float fade = 0f;
     private float fadeTarget = 0f;
     private bool releasing = false;      // fade out then return to pool
@@ -39,13 +36,10 @@ public class ItemAudioManager : MonoBehaviour
         {
             Debug.LogError("AudioSource component is missing.");
         }
-    }
-
-    void Start()
-    {
-        if (listener == null)
+        else
         {
-            listener = Camera.main.transform;
+            // Full 3D: distance drives loudness, spatializer drives direction.
+            audioSource.spatialBlend = 1f;
         }
     }
 
@@ -69,7 +63,6 @@ public class ItemAudioManager : MonoBehaviour
         audible = true;
         fade = 0f;
         fadeTarget = 1f;
-        facingVolume = maxVolumeWhenFacing;
 
         audioSource.volume = 0f;
         audioSource.clip = SelectRandomClip();
@@ -152,14 +145,9 @@ public class ItemAudioManager : MonoBehaviour
             fade = Mathf.MoveTowards(fade, fadeTarget, step);
         }
 
-        if (listener != null)
-        {
-            UpdateFacingVolume();
-        }
-
         if (audioSource.isPlaying)
         {
-            audioSource.volume = facingVolume * fade;
+            audioSource.volume = fade;
         }
 
         if (fade <= 0.0001f)
@@ -202,13 +190,5 @@ public class ItemAudioManager : MonoBehaviour
         }
 
         return audioClips[0].clip;
-    }
-
-    private void UpdateFacingVolume()
-    {
-        Vector3 directionToListener = (listener.position - transform.position).normalized;
-        float angle = Vector3.Angle(transform.forward, directionToListener);
-        float t = Mathf.Clamp01(angle / maxAngle);
-        facingVolume = Mathf.Lerp(maxVolumeWhenFacing, minVolumeWhenNotFacing, t);
     }
 }
