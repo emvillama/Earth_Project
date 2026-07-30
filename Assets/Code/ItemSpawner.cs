@@ -19,6 +19,12 @@ public class ItemSpawner : MonoBehaviour
     private ObjectPool<GameObject> pool;
     private Transform mainCamera;
 
+    public SpawnConfig config;
+    private int rndTimeMin = 5;
+    private int rndTimeMax = 10;
+    private float fadeInDuration = 0.05f;
+    private float fadeOutDuration = 0.25f;
+
     private bool IsInGrid(Vector3 position)
     {
         int xMin = XPlayerLocation - length;
@@ -37,6 +43,7 @@ public class ItemSpawner : MonoBehaviour
 
     void Start()
     {
+        ApplyConfig();
         itemPos = new Dictionary<Vector3, Tile>();
         mainCamera = Camera.main != null ? Camera.main.transform : null;
 
@@ -64,6 +71,22 @@ public class ItemSpawner : MonoBehaviour
         {
             ManageItems(Time.realtimeSinceStartup);
         }
+    }
+
+    private void ApplyConfig()
+    {
+        if (config == null)
+        {
+            return;
+        }
+        itemMax = config.itemMax;
+        itemChance = config.itemChance;
+        length = config.spawnRadius;
+        rndTimeMin = config.rndTimeMin;
+        rndTimeMax = config.rndTimeMax;
+        fadeInDuration = config.fadeInDuration;
+        fadeOutDuration = config.fadeOutDuration;
+        VoiceManager.Instance.maxVoices = config.maxVoices;
     }
 
     // Called by ItemAudioManager once its fade-out completes.
@@ -143,9 +166,11 @@ public class ItemSpawner : MonoBehaviour
                     }
                     audioManager.listener = mainCamera;
                     audioManager.spawner = this;
+                    audioManager.fadeInDuration = fadeInDuration;
+                    audioManager.fadeOutDuration = fadeOutDuration;
                     audioManager.Play();
 
-                    Tile o = new Tile(cTime, itemInstance);
+                    Tile o = new Tile(cTime, itemInstance, Random.Range(rndTimeMin, rndTimeMax));
                     o.audioManager = audioManager;
                     newItemPos[loc] = o;
                 }
@@ -163,12 +188,12 @@ public class ItemSpawner : MonoBehaviour
         public float activationTime;
         public int rndTime;
 
-        public Tile(float cTimestamp, GameObject tileObject)
+        public Tile(float cTimestamp, GameObject tileObject, int rndTime)
         {
             this.tileObject = tileObject;
             this.cTimestamp = cTimestamp;
             this.activationTime = Time.time;
-            this.rndTime = Random.Range(5, 10);
+            this.rndTime = rndTime;
         }
 
         public float GetActiveDuration()
