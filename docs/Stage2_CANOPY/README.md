@@ -3,6 +3,12 @@
 world feels real, not like one repeating clip.
 
 ## Substages
+- ☐ **2.0 Audio library acquisition.** Gather the forest clip set — see
+  `docs/biomes/Forest_v1_audio_checklist.md` (have 5, need ~20). Plan: a long-haul
+  download session pulling **CC0 / CC-BY** clips (xeno-canto, freesound, Sonniss bundle)
+  rather than self-recording (mic constraints). Drop clips into
+  `Assets/Sound Library/Environments/Forest/*`; the nightly cleaner auto-formats them.
+  Long-lead + gating for everything below — run it in the background starting now.
 - ☐ **2.1 Data-driven SoundObject system.** ScriptableObject definitions per object
   type (clips, weights, spawn rules, lifetime, movement, height band). Everything below
   becomes data, not new classes.
