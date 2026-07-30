@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ac04169a118b38914912f5d2ebd4f29, type: 3}
+  m_Name: BlueJay
+  m_EditorClassIdentifier:
+  displayName: BlueJay
+  layer: 1
+  clips:
+  - clip: {fileID: 8300000, guid: c3b8ba75bc9babe4ca10ad8f4ab71217, type: 3}
+    weight: 1
+  spawnWeight: 9
+  maxConcurrent: 2
+  minHeight: 8
+  maxHeight: 18
+  minDistance: 3
+  audibleRadius: 150
+  lifetimeMin: 4
+  lifetimeMax: 8

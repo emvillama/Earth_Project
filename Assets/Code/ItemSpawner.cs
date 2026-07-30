@@ -20,6 +20,7 @@ public class ItemSpawner : MonoBehaviour
     private Transform mainCamera;
 
     public SpawnConfig config;
+    public BiomeProfileSet biome;
     private int rndTimeMin = 5;
     private int rndTimeMax = 10;
     private float fadeInDuration = 0.05f;
@@ -30,6 +31,7 @@ public class ItemSpawner : MonoBehaviour
     private float densityContrast = 0.5f;
     private float densityScale = 40f;
     private const float DensityOffset = 3137f; // decorrelate density noise from height noise
+    private readonly Dictionary<SoundProfile, int> activeCounts = new Dictionary<SoundProfile, int>();
 
     private bool IsInGrid(Vector3 position)
     {
@@ -100,6 +102,58 @@ public class ItemSpawner : MonoBehaviour
         VoiceManager.Instance.maxVoices = config.maxVoices;
     }
 
+    private bool HasBiome()
+    {
+        return biome != null && biome.profiles != null && biome.profiles.Length > 0;
+    }
+
+    // Weighted-random pick over eligible profiles (discrete layers, under their concurrency
+    // cap). Returns null if no biome is assigned (→ fallback) or all profiles are capped.
+    private SoundProfile SelectProfile()
+    {
+        if (!HasBiome())
+        {
+            return null;
+        }
+        float total = 0f;
+        foreach (var p in biome.profiles)
+        {
+            if (p != null && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent)
+            {
+                total += p.spawnWeight;
+            }
+        }
+        if (total <= 0f)
+        {
+            return null;
+        }
+        float r = Random.Range(0f, total);
+        float cum = 0f;
+        foreach (var p in biome.profiles)
+        {
+            if (p != null && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent)
+            {
+                cum += p.spawnWeight;
+                if (r < cum)
+                {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
+    private int CurrentCount(SoundProfile p)
+    {
+        return activeCounts.TryGetValue(p, out int c) ? c : 0;
+    }
+
+    private void ChangeCount(SoundProfile p, int delta)
+    {
+        int c = CurrentCount(p) + delta;
+        activeCounts[p] = c < 0 ? 0 : c;
+    }
+
     // Called by ItemAudioManager once its fade-out completes.
     public void ReleaseToPool(GameObject o)
     {
@@ -127,6 +181,10 @@ public class ItemSpawner : MonoBehaviour
             if (shouldDestroy)
             {
                 itemsToRemove.Add(loc);
+                if (kvp.Value.profile != null)
+                {
+                    ChangeCount(kvp.Value.profile, -1);
+                }
                 if (kvp.Value.audioManager != null)
                 {
                     kvp.Value.audioManager.FadeOutAndRelease();
@@ -178,12 +236,24 @@ public class ItemSpawner : MonoBehaviour
                 float densityMul = Mathf.Lerp(1f, density * 2f, densityContrast);
                 if (Random.Range(0f, 100f) < itemChance * densityMul)
                 {
-                    Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+                    // Pick which species spawns here (rarity table + per-profile cap).
+                    SoundProfile profile = SelectProfile();
+                    if (HasBiome() && profile == null)
+                    {
+                        continue; // biome active but every profile is at its concurrency cap
+                    }
 
+                    float groundY = loc.y;
+                    if (profile != null)
+                    {
+                        loc.y = groundY + Random.Range(profile.minHeight, profile.maxHeight);
+                    }
+
+                    Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
                     GameObject itemInstance = pool.Get();
                     itemInstance.transform.SetPositionAndRotation(loc, randomRotation);
 
-                    // Ensure ItemAudioManager is present, then (re)start its audio.
+                    // Ensure ItemAudioManager is present, then configure + (re)start its audio.
                     var audioManager = itemInstance.GetComponent<ItemAudioManager>();
                     if (audioManager == null)
                     {
@@ -193,11 +263,25 @@ public class ItemSpawner : MonoBehaviour
                     audioManager.spawner = this;
                     audioManager.fadeInDuration = fadeInDuration;
                     audioManager.fadeOutDuration = fadeOutDuration;
-                    audioManager.SetDistances(minDistance, audibleRadius);
+
+                    float life;
+                    if (profile != null)
+                    {
+                        audioManager.audioClips = profile.clips;
+                        audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
+                        life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
+                        ChangeCount(profile, 1);
+                    }
+                    else
+                    {
+                        audioManager.SetDistances(minDistance, audibleRadius);
+                        life = Random.Range(rndTimeMin, rndTimeMax);
+                    }
                     audioManager.Play();
 
-                    Tile o = new Tile(cTime, itemInstance, Random.Range(rndTimeMin, rndTimeMax));
+                    Tile o = new Tile(cTime, itemInstance, life);
                     o.audioManager = audioManager;
+                    o.profile = profile;
                     newItemPos[loc] = o;
                 }
             }
@@ -211,10 +295,11 @@ public class ItemSpawner : MonoBehaviour
         public float cTimestamp;
         public GameObject tileObject;
         public ItemAudioManager audioManager;
+        public SoundProfile profile;
         public float activationTime;
-        public int rndTime;
+        public float rndTime;
 
-        public Tile(float cTimestamp, GameObject tileObject, int rndTime)
+        public Tile(float cTimestamp, GameObject tileObject, float rndTime)
         {
             this.tileObject = tileObject;
             this.cTimestamp = cTimestamp;
