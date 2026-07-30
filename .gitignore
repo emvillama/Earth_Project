@@ -24,3 +24,6 @@ crashlytics-build.properties
 *.slnx
 # Plastic SCM leftover
 ignore.conf
+
+# Raw audio downloads (staging; cherry-pick + clean into Assets on use)
+_incoming/
