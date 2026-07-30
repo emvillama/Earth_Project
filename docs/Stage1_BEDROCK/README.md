@@ -14,31 +14,33 @@ new gets built on shaky base scripts. Everything here also sets up mobile viabil
   the stubbed `GenerateTerrain`).
 - ☑ **1.2 Object pooling.** Replaced `Instantiate`/`Destroy` churn with
   `UnityEngine.Pool.ObjectPool` (get/reposition on spawn, release on despawn).
-- ☐ **1.3 Deterministic, frame-budgeted spawning.** Spawn cap reduced 100→40 (now the
-  public `itemMax`, tunable). Still TODO: steady per-frame spawn budget, and the
-  **design decision** — keep uniform-random placement or move to Perlin-driven *density*
-  (clumps vs clearings). Behavior change, needs Harry's call.
+- ◐ **1.3 Deterministic, frame-budgeted spawning.** *Done:* spawn cap 100→40; **player
+  exclusion radius** (10, no spawns on top of player) + **decoupled audible radius** (80,
+  < spawnRadius 150 so sounds fade in as you approach). *Still open:* the **design call**
+  — uniform-random vs Perlin-driven *density* (clumps vs clearings); and a steady
+  per-frame spawn budget (minor perf).
 - ☑ **1.4 Audio voice management.** `VoiceManager` caps ~20 concurrent voices,
   distance-priority pause/unpause every 0.25s. (Baseline was 47 voices.)
 - ◐ **1.5 Player controller polish.** *Done:* walk speed halved (50→25). *Still TODO:*
   wrap `Cubie`'s direct `Input.GetAxis` behind an interface so Stage 4 (phone sensors)
   can swap it cleanly; ground check / walk-vs-fly / collision — partly design-dependent
   (terrain is currently stubbed, so collision is moot until we decide on ground).
-- ☐ **1.6 Config via ScriptableObjects.** Move the hand-typed "pre-load" inputs —
-  `itemMax`, `itemChance`, `rndTime`, and `WeightedAudioClip.weight` — plus spawn
-  density/radius/lifetimes into SO configs for fast iteration. **This is the handoff into
-  CANOPY.**
+- ☑ **1.6 Config via ScriptableObjects.** `SpawnConfig` SO + `SpawnConfig.asset` hold
+  every knob: itemMax, itemChance, spawnRadius, rndTime range, maxVoices, fade in/out,
+  min/audible distance, exclusion radius. `ItemSpawner` reads it (falls back to defaults
+  if unassigned). Drag the asset onto WorldGenerator→ItemSpawner to tune live.
 - ☑ **1.7 Profiling baseline.** Recorded 2026-07-29 (see table below): 12.9 KB/frame GC,
   47 voices — the yardstick for later stages.
 - ☑ **1.8 Audio hygiene — fade-out.** `ItemAudioManager` envelope: fast fade-in (0.05s,
   preserves attacks) + smooth fade-out (0.25s) on despawn and voice-cull. Confirmed good.
 
-**Progress (2026-07-30):** 1.0, 1.1, 1.2, 1.4, 1.7, 1.8 done + pushed. Bonus done: audio
-clips noise-gated/denoised + nightly auto-clean pipeline; **fixed Item prefab that was
-loading UNFINISHED/junk clips → repointed to finished set**; **removed unused Resonance
-SDK** (spatializer is Meta XR Audio; 0 refs). **Remaining: 1.3** (spawn-model design
-call), **1.5** (input abstraction + ground/collision, partly design-dependent), **1.6**
-(ScriptableObject config — next mechanical item, and the CANOPY handoff).
+**Progress (2026-07-30):** 1.0, 1.1, 1.2, 1.4, 1.6, 1.7, 1.8 done + pushed; 1.3 mostly
+done. Bonus: audio clips noise-gated/denoised + nightly auto-clean pipeline; **fixed Item
+prefab loading UNFINISHED/junk clips**; **removed unused Resonance SDK**; **realism pass**
+(dropped fake facing-volume — loudness is distance now); **player exclusion + audible
+radius** ("donut of sound" that travels with you). **Remaining: the two design calls —
+1.3** (uniform-random vs Perlin density) and **1.5-movement** (walk-vs-fly / terrain).
+Input-abstraction half of 1.5 (wrap `Input.GetAxis` for Stage 4) still to do.
 
 **Already implemented (reuse, don't rebuild):** weighted clip selection
 (`ItemAudioManager.SelectRandomClip`), a global object cap (`itemMax`), engine-level
