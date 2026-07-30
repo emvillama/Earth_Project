@@ -19,12 +19,19 @@ world feels real, not like one repeating clip.
   head height, leaves near ground; fade in/out (no abrupt cut). Weather hook for later.
 - ☐ **2.4 River / water.** Multiple layered river sources by "strength," fish splashes,
   player-in-water footsteps, location-anchored (stays put once encountered).
-- ☐ **2.5 Ground & foliage SFX.** Stick snaps / crunch tied to player movement over
-  terrain; cicadas, deer calls as occasional distant events.
+- ☐ **2.5 Player footsteps & foliage SFX.** Player movement drives sound: **leaf
+  crunch** underfoot, occasional **stick/branch snap**, over terrain. Makes the player's
+  own movement audibly part of the 3D space (pairs with 2.8). Plus cicadas / distant deer
+  calls as occasional events.
 - ☐ **2.6 Variety & anti-repetition.** Expand weighted selection; forbid immediate
   repeats; randomize pitch/gain slightly per play for naturalism.
-- ☐ **2.7 Spatial mix polish.** Tune Resonance distance attenuation, reverb probes/
-  rooms per area so space feels believable.
+- ☐ **2.7 Spatial mix polish.** Tune distance attenuation + reverb per area so space
+  feels believable (pairs with the Stage 3 spatializer choice).
+- ☐ **2.8 Wildlife awareness of the player.** Animals react to you: discrete vocal
+  creatures (birds, mammals) **hush or flee** — optionally with a startle rustle — when
+  you come within a per-species *wary radius*; insects/wind ignore you. Makes moving
+  through the woods feel like the world notices you. (A simple no-spawn **player
+  exclusion radius** lands earlier, in BEDROCK 1.3, as the foundation for this.)
 
 **Exit criteria:** a walk through the scene surfaces varied, non-repeating, believable
 directional audio across at least birds + wind + water.
