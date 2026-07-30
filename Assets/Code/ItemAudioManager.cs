@@ -19,6 +19,8 @@ public class ItemAudioManager : MonoBehaviour
     public float minVolumeWhenNotFacing = 0.2f;
     public float maxAngle = 60.0f;
 
+    private bool audible = true;
+
     void Awake()
     {
         audioSource = GetComponent<AudioSource>();
@@ -50,6 +52,8 @@ public class ItemAudioManager : MonoBehaviour
         {
             audioSource.clip = SelectRandomClip();
             audioSource.Play();
+            audible = true;
+            VoiceManager.Instance.Register(this);
         }
         else
         {
@@ -59,10 +63,36 @@ public class ItemAudioManager : MonoBehaviour
 
     public void StopAudio()
     {
+        VoiceManager.UnregisterSafe(this);
         if (audioSource != null)
         {
             audioSource.Stop();
         }
+    }
+
+    // Called by the VoiceManager: pause when we're not one of the nearest voices,
+    // resume (mid-sound) when we are.
+    public void SetAudible(bool value)
+    {
+        if (audioSource == null || value == audible)
+        {
+            return;
+        }
+        audible = value;
+
+        if (value)
+        {
+            audioSource.UnPause();
+        }
+        else
+        {
+            audioSource.Pause();
+        }
+    }
+
+    void OnDisable()
+    {
+        VoiceManager.UnregisterSafe(this);
     }
 
     void Update()
