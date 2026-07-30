@@ -67,6 +67,11 @@ public class ItemAudioManager : MonoBehaviour
         audioSource.volume = 0f;
         audioSource.clip = SelectRandomClip();
         audioSource.Play();
+        // Start at a random point so a long clip doesn't always replay just its opening.
+        if (audioSource.clip != null && audioSource.clip.length > 2f)
+        {
+            audioSource.time = Random.Range(0f, audioSource.clip.length - 1f);
+        }
         VoiceManager.Instance.Register(this);
     }
 
