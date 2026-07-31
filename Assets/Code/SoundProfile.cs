@@ -12,6 +12,10 @@ public class SoundProfile : ScriptableObject
     public string displayName;
     public SoundLayer layer = SoundLayer.Event;
 
+    [Tooltip("Uncheck to turn this species off without removing it from the biome. Takes effect " +
+             "live in Play mode.")]
+    public bool enabled = true;
+
     [Header("Clips")]
     [Tooltip("Clip variations for this species; internal weights choose between them per play.")]
     public WeightedAudioClip[] clips;
