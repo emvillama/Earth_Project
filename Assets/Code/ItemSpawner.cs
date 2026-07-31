@@ -75,11 +75,23 @@ public class ItemSpawner : MonoBehaviour
             defaultCapacity: itemMax,
             maxSize: itemMax * 2);
 
-        // Continuous ambient floor for this biome (wind/insects), if one is set.
-        if (biome != null && biome.bedClip != null)
+        // Continuous diffuse floor(s) — layered wind/insects, each crossfade-looped 2D.
+        if (biome != null)
         {
-            var bedGo = new GameObject("AmbientBed");
-            bedGo.AddComponent<AmbientBed>().Init(biome.bedClip, biome.bedVolume, biome.bedCrossfade);
+            if (biome.bedLayers != null && biome.bedLayers.Length > 0)
+            {
+                foreach (var layer in biome.bedLayers)
+                {
+                    if (layer == null || layer.clip == null) continue;
+                    var go = new GameObject("AmbientBed_" + layer.clip.name);
+                    go.AddComponent<AmbientBed>().Init(layer.clip, layer.volume, 3f);
+                }
+            }
+            else if (biome.bedClip != null) // legacy single bed
+            {
+                var bedGo = new GameObject("AmbientBed");
+                bedGo.AddComponent<AmbientBed>().Init(biome.bedClip, biome.bedVolume, biome.bedCrossfade);
+            }
         }
 
         ManageItems(Time.realtimeSinceStartup);

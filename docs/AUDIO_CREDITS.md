@@ -16,3 +16,5 @@ If this project/concept is ever sold, the buyer must be warned about this collec
 | AmericanCrow | XC371062 | Eric DeFonso | https://creativecommons.org/licenses/by-nc-sa/4.0/ | https://xeno-canto.org/371062 |
 | MourningDove | XC153648 | Paul Marvin | https://creativecommons.org/licenses/by-nc-sa/3.0/ | https://xeno-canto.org/153648 |
 | WhiteBreastedNuthatch | XC942746 | Tero Linjama | https://creativecommons.org/licenses/by-nc-sa/4.0/ | https://xeno-canto.org/942746 |
+| Wind_ThroughTrees | freesound 444919 | nomadape | freesound (personal-use) | https://freesound.org/s/444919 |
+| Insects_Grasshopper | freesound 401856 | straget | freesound (personal-use) | https://freesound.org/s/401856 |

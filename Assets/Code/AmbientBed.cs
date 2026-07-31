@@ -1,22 +1,25 @@
 using UnityEngine;
 
-// Continuous ambient floor. A single looping 2D source — Unity loops it sample-accurately
-// with no gap or cut. 2D so it surrounds the player everywhere (diffuse floor; not a
-// localizable point source, which is correct for wind/insect ambience and head-tracking).
-// Auto-created by ItemSpawner from the biome's bedClip.
+// One diffuse floor layer (wind, insects, ...), looped seamlessly with an equal-power
+// crossfade at the loop point so there's no hard cut on field recordings that don't loop
+// cleanly. Two AudioSources play the same clip, offset by (length - crossfade); each fades
+// in/out over `crossfade` so the overlap masks the seam. Scheduled on the audio clock
+// (dspTime) for sample-accurate timing. 2D — a diffuse floor, present everywhere.
 public class AmbientBed : MonoBehaviour
 {
     public AudioClip clip;
     public float volume = 0.45f;
-    public float crossfade = 2f; // kept for compatibility; a well-made loop clip needs none
+    public float crossfade = 3f;
 
-    private AudioSource source;
+    private AudioSource s0, s1;
+    private double dur;
+    private double start0, start1; // dsp start time of each source's current pass
 
     public void Init(AudioClip c, float vol, float xf)
     {
         clip = c;
         volume = vol;
-        crossfade = Mathf.Max(0f, xf);
+        crossfade = Mathf.Max(0.25f, xf);
     }
 
     void Start()
@@ -25,22 +28,77 @@ public class AmbientBed : MonoBehaviour
         {
             return;
         }
-        source = gameObject.AddComponent<AudioSource>();
-        source.clip = clip;
-        source.loop = true;         // seamless continuous playback — never cuts out
-        source.playOnAwake = false;
-        source.spatialBlend = 0f;   // 2D: diffuse floor, present everywhere
-        source.spatialize = false;
-        source.volume = volume;
-        source.Play();
+        s0 = gameObject.AddComponent<AudioSource>();
+        s1 = gameObject.AddComponent<AudioSource>();
+        foreach (var s in new[] { s0, s1 })
+        {
+            s.clip = clip;
+            s.loop = false;
+            s.playOnAwake = false;
+            s.spatialBlend = 0f; // 2D diffuse floor
+            s.spatialize = false;
+            s.volume = 0f;
+        }
+        dur = (double)clip.samples / clip.frequency;
+        if (dur <= crossfade * 2.0)
+        {
+            crossfade = (float)(dur * 0.25); // very short clip: shrink the crossfade
+        }
+
+        double t0 = AudioSettings.dspTime + 0.15;
+        start0 = t0;
+        s0.PlayScheduled(start0);
+        start1 = t0 + dur - crossfade; // second copy overlaps the first's tail
+        s1.PlayScheduled(start1);
     }
 
-    // Allow live volume tweaks from the biome/inspector.
     void Update()
     {
-        if (source != null && !Mathf.Approximately(source.volume, volume))
+        if (clip == null)
         {
-            source.volume = volume;
+            return;
         }
+        double now = AudioSettings.dspTime;
+
+        // Reschedule each source's next pass to begin as the *other* one is ending,
+        // keeping a continuous alternating crossfade chain.
+        if (now >= start0 + dur)
+        {
+            start0 = start1 + dur - crossfade;
+            s0.PlayScheduled(start0);
+        }
+        if (now >= start1 + dur)
+        {
+            start1 = start0 + dur - crossfade;
+            s1.PlayScheduled(start1);
+        }
+
+        s0.volume = Envelope(now, start0);
+        s1.volume = Envelope(now, start1);
+    }
+
+    // Equal-power fade in over the first `crossfade`, full in the middle, fade out over the
+    // last `crossfade`. sqrt keeps constant power through the overlap (no -3dB dip).
+    private float Envelope(double now, double start)
+    {
+        double t = now - start;
+        if (t < 0.0 || t > dur)
+        {
+            return 0f;
+        }
+        float k;
+        if (t < crossfade)
+        {
+            k = (float)(t / crossfade);
+        }
+        else if (t > dur - crossfade)
+        {
+            k = (float)((dur - t) / crossfade);
+        }
+        else
+        {
+            k = 1f;
+        }
+        return volume * Mathf.Sqrt(Mathf.Clamp01(k));
     }
 }
