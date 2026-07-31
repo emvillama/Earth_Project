@@ -44,6 +44,12 @@ the experience; Low = what it changes in code._
 | `minHeight`/`maxHeight` | Where in space it lives — birds overhead, rustles at ground. | Random Y offset band above ground at spawn. |
 | `minDistance`/`audibleRadius` | How near/far this species can be heard (a crow carries, a rustle doesn't). | Per-source 3D rolloff distances, set at spawn from the profile. |
 | `lifetimeMin`/`lifetimeMax` | **Presence** — how long an individual stays and keeps calling before leaving. | Random despawn time per instance (15–30s default). |
+| `waryRadius` | How close you can get before this animal hushes and flees (0 = bold, ignores you). | Player-distance threshold that force-despawns the individual (2.8). |
+| `enabled` | Per-species on/off. | Disabled profiles are skipped by the rarity selector. |
+| `fixedStart` | Play the full clip from the start (e.g. a dove's coo) vs a random slice. | Skips the random `audioSource.time` offset at each call. |
+| `neighborBias` / `neighborRadius` | Call-and-response — how strongly new birds cluster near an existing one of the species. | Chance a spawn anchors near a same-species neighbor within the radius. |
+| `pitchJitter` / `gainJitter` | Anti-repetition — subtle per-call pitch/level variation. | ±fraction randomization applied each call. |
+| `canFlyover` | Whether this species can pass overhead as a fly-over. | Opt-in for the spawner's flyover behavior. |
 | `callLengthMin`/`Max` | How long each call/phrase lasts. | Seconds of audio before the bird goes quiet for a gap. |
 | `gapMin`/`gapMax` | The silence between a bird's calls (its rhythm). | Random quiet seconds between calls, same spot. |
 | `layer` | Whether it's a discrete event or part of the ambient floor. | `Bed` profiles are skipped by discrete spawning (handled by 2.3). |

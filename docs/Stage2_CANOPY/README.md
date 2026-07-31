@@ -45,11 +45,11 @@ world feels real, not like one repeating clip.
   and clusters of the same species — from reading as one looped sample.
 - ☐ **2.7 Spatial mix polish.** Tune distance attenuation + reverb per area so space
   feels believable (pairs with the Stage 3 spatializer choice).
-- ☐ **2.8 Wildlife awareness of the player.** Animals react to you: discrete vocal
-  creatures (birds, mammals) **hush or flee** — optionally with a startle rustle — when
-  you come within a per-species *wary radius*; insects/wind ignore you. Makes moving
-  through the woods feel like the world notices you. (A simple no-spawn **player
-  exclusion radius** lands earlier, in BEDROCK 1.3, as the foundation for this.)
+- ◐ **2.8 Wildlife awareness of the player.** *Done:* wary animals **hush and flee** (fade
+  out + despawn) when the player comes within their per-species **`waryRadius`** (0 = bold,
+  ignores you). Insects/wind (bed) ignore you; fly-overs excluded. Reuses the despawn/fade
+  path. Per-species radii set (bold jay/chickadee 4 → shy thrush/crow 12). *Later polish:* a
+  **startle rustle** clip on flee. *(needs in-editor play-test.)*
 
 ## Checkpoints (build order)
 
