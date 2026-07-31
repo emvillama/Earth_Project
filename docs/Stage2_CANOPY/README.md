@@ -20,8 +20,11 @@ world feels real, not like one repeating clip.
   - ☑ **Persistent individuals.** An individual now occupies a spot and calls
     *intermittently* (call → gap → call) for its whole presence (15–30s), then leaves —
     fixes the teleporting. Per-species `callLength`/`gap` on the profile.
-  - ☐ **Call-and-response.** New calls cluster in time/space *near existing birds*
-    (spawn-near-neighbor bias) instead of firing everywhere. *(next)*
+  - ☑ **Call-and-response.** New individuals can cluster *near an existing bird of the same
+    species* (spawn-near-neighbor bias) instead of firing everywhere. Per-species
+    `neighborBias` (0 = spread evenly, 1 = always cluster) + `neighborRadius` on the profile;
+    clustered spawns skip the density gate so the anchor drives the clustering. *(needs
+    in-editor tuning: set neighborBias per species and play-test.)*
   - ☐ Overhead flight behaviors.
 - ◐ **2.3 Wind & leaves / ambient bed.** *Done:* `AmbientBed` — continuous dual-source
   **crossfade loop** (2D, never cuts out), auto-created from `biome.bedClip` (Connecticut

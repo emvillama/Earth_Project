@@ -43,4 +43,11 @@ public class SoundProfile : ScriptableObject
     [Tooltip("Quiet gap between calls (same bird, same spot).")]
     public float gapMin = 3f;
     public float gapMax = 9f;
+
+    [Header("Call-and-response (spawn-near-neighbor)")]
+    [Tooltip("Chance a new individual clusters near an existing one of the same species " +
+             "instead of spawning anywhere. 0 = spread evenly (default), 1 = always cluster.")]
+    [Range(0f, 1f)] public float neighborBias = 0f;
+    [Tooltip("How far from an existing individual a clustered spawn can land (world units).")]
+    public float neighborRadius = 25f;
 }

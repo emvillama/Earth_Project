@@ -21,6 +21,16 @@ public class ItemSpawner : MonoBehaviour
 
     public SpawnConfig config;
     public BiomeProfileSet biome;
+
+    [Header("Call-and-response — live tuning")]
+    [Tooltip("When on, these values override every species' neighborBias/neighborRadius so you " +
+             "can tune clustering globally in Play mode. Off = each SoundProfile uses its own.")]
+    public bool overrideNeighbor = false;
+    [Tooltip("Global clustering chance while override is on. 0 = spread evenly, 1 = always cluster.")]
+    [Range(0f, 1f)] public float neighborBiasOverride = 0.6f;
+    [Tooltip("Global cluster radius while override is on (world units).")]
+    public float neighborRadiusOverride = 20f;
+
     private int rndTimeMin = 5;
     private int rndTimeMax = 10;
     private float fadeInDuration = 0.05f;
@@ -190,6 +200,27 @@ public class ItemSpawner : MonoBehaviour
         pool.Release(o);
     }
 
+    // Pick one currently-live individual of the same species at random to cluster near.
+    // Reservoir sampling → uniform choice in a single pass, no temp list allocation.
+    private bool TryPickNeighborAnchor(SoundProfile profile, Dictionary<Vector3, Tile> map, out Vector3 anchor)
+    {
+        anchor = Vector3.zero;
+        int seen = 0;
+        foreach (var kvp in map)
+        {
+            if (kvp.Value.profile != profile)
+            {
+                continue;
+            }
+            seen++;
+            if (Random.Range(0, seen) == 0)
+            {
+                anchor = kvp.Value.tileObject.transform.position;
+            }
+        }
+        return seen > 0;
+    }
+
     private void ManageItems(float cTime)
     {
         var newItemPos = new Dictionary<Vector3, Tile>();
@@ -249,16 +280,56 @@ public class ItemSpawner : MonoBehaviour
         itemPos = newItemPos;
     }
 
-    // Attempt a single spawn: find a valid spot (outside the player bubble, density-weighted)
-    // and a profile under its cap, configure it, and play. Returns true if it spawned.
+    // Attempt a single spawn: pick a profile under its cap, find a valid spot (outside the
+    // player bubble), configure it, and play. Returns true if it spawned. Placement is either
+    // uniform+density-weighted, or — for call-and-response — clustered near a same-species
+    // neighbor so new calls answer existing birds instead of firing everywhere.
     private bool TrySpawnOne(float cTime, Dictionary<Vector3, Tile> map)
     {
+        // Profile is position-independent, so choose it up front: it decides both the
+        // concurrency check and whether this spawn should cluster near a neighbor.
+        SoundProfile profile = SelectProfile();
+        if (HasBiome() && profile == null)
+        {
+            return false; // every profile at its cap right now
+        }
+
         for (int attempt = 0; attempt < 10; attempt++)
         {
-            int x = Random.Range(-length, length);
-            int z = Random.Range(-length, length);
-            float groundY = (yNoise(x + XPlayerLocation, z + ZPlayerLocation, detailScale) * noiseHeight) + 10f;
-            Vector3 loc = new Vector3(x + XPlayerLocation, groundY, z + ZPlayerLocation);
+            // Call-and-response: with neighborBias chance, anchor this spawn near an existing
+            // individual of the same species instead of spreading it uniformly. Read fresh each
+            // spawn so the live-tuning overrides on the spawner take effect during Play.
+            float bias = overrideNeighbor ? neighborBiasOverride
+                                          : (profile != null ? profile.neighborBias : 0f);
+            Vector3 anchor = Vector3.zero;
+            bool clustered = profile != null
+                && bias > 0f
+                && Random.value < bias
+                && TryPickNeighborAnchor(profile, map, out anchor);
+
+            int wx, wz;
+            if (clustered)
+            {
+                float radius = overrideNeighbor ? neighborRadiusOverride : profile.neighborRadius;
+                float ang = Random.Range(0f, Mathf.PI * 2f);
+                float rad = Random.Range(profile.minDistance, radius);
+                wx = Mathf.RoundToInt(anchor.x + Mathf.Cos(ang) * rad);
+                wz = Mathf.RoundToInt(anchor.z + Mathf.Sin(ang) * rad);
+            }
+            else
+            {
+                wx = Random.Range(-length, length) + XPlayerLocation;
+                wz = Random.Range(-length, length) + ZPlayerLocation;
+            }
+
+            float groundY = (yNoise(wx, wz, detailScale) * noiseHeight) + 10f;
+            Vector3 loc = new Vector3(wx, groundY, wz);
+
+            // Clustered spawns can land past the grid edge; keep everything in the live window.
+            if (!IsInGrid(loc))
+            {
+                continue;
+            }
 
             float ex = loc.x - player.transform.position.x;
             float ez = loc.z - player.transform.position.z;
@@ -272,19 +343,19 @@ public class ItemSpawner : MonoBehaviour
             }
 
             // Perlin density-weighted acceptance: life clusters into pockets vs clearings.
-            float density = Mathf.PerlinNoise((loc.x + DensityOffset) / densityScale,
-                                              (loc.z + DensityOffset) / densityScale);
-            float densityMul = Mathf.Lerp(1f, density * 2f, densityContrast); // avg ~1
-            if (Random.Range(0f, 2f) > densityMul)
+            // Skipped for clustered spawns — the neighbor anchor already provides the clustering,
+            // and re-gating on density would fight it.
+            if (!clustered)
             {
-                continue;
+                float density = Mathf.PerlinNoise((loc.x + DensityOffset) / densityScale,
+                                                  (loc.z + DensityOffset) / densityScale);
+                float densityMul = Mathf.Lerp(1f, density * 2f, densityContrast); // avg ~1
+                if (Random.Range(0f, 2f) > densityMul)
+                {
+                    continue;
+                }
             }
 
-            SoundProfile profile = SelectProfile();
-            if (HasBiome() && profile == null)
-            {
-                continue; // every profile at its cap right now
-            }
             if (profile != null)
             {
                 loc.y = groundY + Random.Range(profile.minHeight, profile.maxHeight);
