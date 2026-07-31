@@ -32,7 +32,15 @@ public class SoundProfile : ScriptableObject
     [Tooltip("Heard out to here. Loud species (crow) carry far; a squirrel rustle does not.")]
     public float audibleRadius = 80f;
 
-    [Header("Lifetime (seconds)")]
-    public float lifetimeMin = 5f;
-    public float lifetimeMax = 10f;
+    [Header("Presence (seconds an individual stays and calls)")]
+    public float lifetimeMin = 15f;
+    public float lifetimeMax = 30f;
+
+    [Header("Persistence — intermittent calling")]
+    [Tooltip("How long each call lasts before a gap.")]
+    public float callLengthMin = 2f;
+    public float callLengthMax = 5f;
+    [Tooltip("Quiet gap between calls (same bird, same spot).")]
+    public float gapMin = 3f;
+    public float gapMax = 9f;
 }

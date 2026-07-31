@@ -16,95 +16,92 @@ public class ItemAudioManager : MonoBehaviour
     public Transform listener;
     public ItemSpawner spawner;
 
-    public float fadeInDuration = 0.05f;  // fast: declick without dulling call attacks
-    public float fadeOutDuration = 0.25f; // smooth: no abrupt cutoffs
+    public float fadeInDuration = 0.05f;
+    public float fadeOutDuration = 0.25f;
 
-    // Envelope only. Loudness + direction come from the AudioSource's own 3D rolloff and
-    // spatialization (realistic: distance sets volume, not head facing). fade eases 0..1
-    // on spawn, voice-cull, and despawn so nothing snaps on/off.
+    // Persistence: an individual stays put and calls intermittently (call -> gap -> call)
+    // for its whole life instead of each call being a fresh spawn elsewhere (no teleporting).
+    // Set per-spawn from the SoundProfile.
+    public float callLengthMin = 2f;
+    public float callLengthMax = 5f;
+    public float gapMin = 3f;
+    public float gapMax = 9f;
+
+    // Envelope: final volume = fade. Direction/loudness come from the AudioSource's 3D rolloff.
     private float fade = 0f;
     private float fadeTarget = 0f;
-    private bool releasing = false;      // fade out then return to pool
-    private bool pauseWhenSilent = false; // culled voice: pause once silent (frees the voice)
-    private bool audible = true;
+    private bool releasing = false; // fade out then return to pool
+    private bool audible = true;    // voice-manager audibility (nearest win)
+    private bool calling = false;   // true during a call, false during a gap
+    private float callEndTime = 0f;
+    private float gapEndTime = 0f;
 
     void Awake()
     {
         audioSource = GetComponent<AudioSource>();
-
         if (audioSource == null)
         {
             Debug.LogError("AudioSource component is missing.");
         }
         else
         {
-            // Full 3D: distance drives loudness, spatializer drives direction.
-            audioSource.spatialBlend = 1f;
+            audioSource.spatialBlend = 1f; // full 3D: distance drives loudness
         }
     }
 
-    // Called by the spawner each time this object is reused from the pool, after it has
-    // been repositioned. Picks a fresh weighted clip and fades it in.
+    // Called by the spawner at spawn — the start of this individual's presence.
     public void Play()
     {
         if (audioSource == null)
         {
             return;
         }
-
         if (audioClips.Length == 0)
         {
             Debug.LogWarning("No audio clips assigned to the ItemAudioManager script.");
             return;
         }
-
         releasing = false;
-        pauseWhenSilent = false;
         audible = true;
         fade = 0f;
-        fadeTarget = 1f;
+        VoiceManager.Instance.Register(this);
+        StartCall();
+    }
 
+    // Begin one call: fresh clip at a random offset, so a bird sings a different snippet
+    // each time from the same spot.
+    private void StartCall()
+    {
+        calling = true;
+        callEndTime = Time.time + Random.Range(callLengthMin, callLengthMax);
         audioSource.volume = 0f;
         audioSource.clip = SelectRandomClip();
         audioSource.Play();
-        // Start at a random point so a long clip doesn't always replay just its opening.
         if (audioSource.clip != null && audioSource.clip.length > 2f)
         {
             audioSource.time = Random.Range(0f, audioSource.clip.length - 1f);
         }
-        VoiceManager.Instance.Register(this);
     }
 
-    // Called by the VoiceManager: fade out + pause when we're not one of the nearest
-    // voices, fade back in when we are.
+    // Voice manager: cull (fade out + pause) when not among the nearest voices.
     public void SetAudible(bool value)
     {
-        if (audioSource == null || releasing || value == audible)
+        if (audioSource == null || releasing)
         {
             return;
         }
         audible = value;
-
-        if (value)
+        if (value && calling && !audioSource.isPlaying)
         {
-            if (!audioSource.isPlaying)
-            {
-                audioSource.UnPause();
-            }
-            pauseWhenSilent = false;
-            fadeTarget = 1f;
-        }
-        else
-        {
-            pauseWhenSilent = true;
-            fadeTarget = 0f;
+            audioSource.UnPause();
         }
     }
 
-    // Called by the spawner on despawn: fade out, then return to the pool.
+    // Spawner: end this individual's presence — fade out, then return to pool.
     public void FadeOutAndRelease()
     {
         releasing = true;
+        calling = false;
         fadeTarget = 0f;
         VoiceManager.UnregisterSafe(this);
         if (audioSource == null || fade <= 0.001f)
@@ -116,6 +113,7 @@ public class ItemAudioManager : MonoBehaviour
     private void DoRelease()
     {
         releasing = false;
+        calling = false;
         VoiceManager.UnregisterSafe(this);
         if (spawner != null)
         {
@@ -136,8 +134,6 @@ public class ItemAudioManager : MonoBehaviour
         }
     }
 
-    // Set by the spawner from SpawnConfig: 3D rolloff distances (full volume within min,
-    // inaudible past max).
     public void SetDistances(float min, float max)
     {
         if (audioSource != null)
@@ -152,6 +148,21 @@ public class ItemAudioManager : MonoBehaviour
         if (audioSource == null)
         {
             return;
+        }
+
+        if (!releasing)
+        {
+            // Call/gap cycle: sing for a call length, go quiet for a gap, repeat.
+            if (calling && Time.time >= callEndTime)
+            {
+                calling = false;
+                gapEndTime = Time.time + Random.Range(gapMin, gapMax);
+            }
+            else if (!calling && Time.time >= gapEndTime)
+            {
+                StartCall();
+            }
+            fadeTarget = (calling && audible) ? 1f : 0f;
         }
 
         if (fade != fadeTarget)
@@ -173,7 +184,8 @@ public class ItemAudioManager : MonoBehaviour
                 DoRelease();
                 return;
             }
-            if (pauseWhenSilent && audioSource.isPlaying)
+            // Silent (in a gap or culled): pause to free the hardware voice.
+            if (audioSource.isPlaying)
             {
                 audioSource.Pause();
             }

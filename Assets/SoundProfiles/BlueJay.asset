@@ -23,5 +23,5 @@ MonoBehaviour:
   maxHeight: 18
   minDistance: 3
   audibleRadius: 150
-  lifetimeMin: 4
-  lifetimeMax: 8
+  lifetimeMin: 15
+  lifetimeMax: 30

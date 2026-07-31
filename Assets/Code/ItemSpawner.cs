@@ -297,6 +297,10 @@ public class ItemSpawner : MonoBehaviour
             {
                 audioManager.audioClips = profile.clips;
                 audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
+                audioManager.callLengthMin = profile.callLengthMin;
+                audioManager.callLengthMax = profile.callLengthMax;
+                audioManager.gapMin = profile.gapMin;
+                audioManager.gapMax = profile.gapMax;
                 life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
                 ChangeCount(profile, 1);
             }
