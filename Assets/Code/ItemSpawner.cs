@@ -297,10 +297,12 @@ public class ItemSpawner : MonoBehaviour
             {
                 audioManager.audioClips = profile.clips;
                 audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
-                audioManager.callLengthMin = profile.callLengthMin;
-                audioManager.callLengthMax = profile.callLengthMax;
-                audioManager.gapMin = profile.gapMin;
-                audioManager.gapMax = profile.gapMax;
+                // Guard against 0 (older profile assets predate these fields; Unity loads
+                // missing serialized fields as 0, which would make calls end instantly).
+                audioManager.callLengthMin = profile.callLengthMin > 0f ? profile.callLengthMin : 2f;
+                audioManager.callLengthMax = profile.callLengthMax > 0f ? profile.callLengthMax : 5f;
+                audioManager.gapMin = profile.gapMin > 0f ? profile.gapMin : 3f;
+                audioManager.gapMax = profile.gapMax > 0f ? profile.gapMax : 9f;
                 life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
                 ChangeCount(profile, 1);
             }
