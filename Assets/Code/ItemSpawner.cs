@@ -253,6 +253,19 @@ public class ItemSpawner : MonoBehaviour
                 shouldDestroy = true;
             }
 
+            // Wildlife awareness (2.8): a wary animal hushes and flees when the player comes
+            // within its wary radius (not fly-overs — they're already passing through).
+            if (!shouldDestroy && !kvp.Value.flying && kvp.Value.profile != null
+                && kvp.Value.profile.waryRadius > 0f)
+            {
+                float wx = itemPosition.x - player.transform.position.x;
+                float wz = itemPosition.z - player.transform.position.z;
+                if (wx * wx + wz * wz < kvp.Value.profile.waryRadius * kvp.Value.profile.waryRadius)
+                {
+                    shouldDestroy = true;
+                }
+            }
+
             if (shouldDestroy)
             {
                 itemsToRemove.Add(loc);

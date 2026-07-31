@@ -27,3 +27,4 @@ MonoBehaviour:
   lifetimeMax: 30
   canFlyover: 1
   enabled: 1
+  waryRadius: 4

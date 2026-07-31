@@ -11,8 +11,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7ac04169a118b38914912f5d2ebd4f29, type: 3}
   m_Name: WhiteBreastedNuthatch
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   displayName: WhiteBreastedNuthatch
+  enabled: 0
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: ea3edb64392ddb625f134733ce3c75ca, type: 3}
@@ -25,4 +26,16 @@ MonoBehaviour:
   audibleRadius: 70
   lifetimeMin: 15
   lifetimeMax: 30
-  enabled: 1
+  callLengthMin: 2
+  callLengthMax: 5
+  gapMin: 3
+  gapMax: 9
+  neighborBias: 0
+  neighborRadius: 25
+  pitchJitter: 0.06
+  gainJitter: 0.12
+  canFlyover: 0
+  fixedStart: 0
+  fadeIn: 0
+  fadeOut: 0
+  waryRadius: 6

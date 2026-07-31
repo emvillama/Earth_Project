@@ -71,4 +71,8 @@ public class SoundProfile : ScriptableObject
     public float fadeIn = 0f;
     [Tooltip("Fade-out seconds (0 = use the global default).")]
     public float fadeOut = 0f;
+
+    [Header("Wildlife awareness (2.8) — reacts to the player")]
+    [Tooltip("Player distance (world units) at which this animal hushes and flees. 0 = bold, ignores you.")]
+    public float waryRadius = 0f;
 }
