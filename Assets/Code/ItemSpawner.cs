@@ -31,6 +31,17 @@ public class ItemSpawner : MonoBehaviour
     [Tooltip("Global cluster radius while override is on (world units).")]
     public float neighborRadiusOverride = 20f;
 
+    [Header("Flyovers — live tuning")]
+    [Tooltip("Master on/off for birds passing overhead. Only species with canFlyover are eligible.")]
+    public bool enableFlyovers = false;
+    [Tooltip("Chance an eligible (mobile) bird spawns as a fly-over instead of perched.")]
+    [Range(0f, 1f)] public float flyoverChance = 0.15f;
+    [Tooltip("How fast fly-overs cross the sky (world units/sec).")]
+    public float flyoverSpeed = 12f;
+    [Tooltip("Height band above the player that fly-overs cross at (world units).")]
+    public float flyoverHeightMin = 20f;
+    public float flyoverHeightMax = 40f;
+
     private int rndTimeMin = 5;
     private int rndTimeMax = 10;
     private float fadeInDuration = 0.05f;
@@ -234,7 +245,10 @@ public class ItemSpawner : MonoBehaviour
 
             bool shouldDestroy = false;
 
-            if (!IsInGrid(itemPosition) || kvp.Value.GetActiveDuration() >= kvp.Value.rndTime)
+            // Fly-overs deliberately start and end outside the grid, so cull them by lifetime
+            // (their crossing time) only; everything else also despawns when it leaves the grid.
+            bool outOfGrid = !kvp.Value.flying && !IsInGrid(itemPosition);
+            if (outOfGrid || kvp.Value.GetActiveDuration() >= kvp.Value.rndTime)
             {
                 shouldDestroy = true;
             }
@@ -292,6 +306,14 @@ public class ItemSpawner : MonoBehaviour
         if (HasBiome() && profile == null)
         {
             return false; // every profile at its cap right now
+        }
+
+        // Fly-over: an eligible mobile species can spawn as a bird passing overhead instead of a
+        // perched caller. Own placement (chord over the player), so it bypasses the ground-spawn
+        // loop below and its player-exclusion/density gates.
+        if (enableFlyovers && profile != null && profile.canFlyover && Random.value < flyoverChance)
+        {
+            return SpawnFlyover(cTime, map, profile);
         }
 
         for (int attempt = 0; attempt < 10; attempt++)
@@ -365,35 +387,7 @@ public class ItemSpawner : MonoBehaviour
             GameObject itemInstance = pool.Get();
             itemInstance.transform.SetPositionAndRotation(loc, rot);
 
-            var audioManager = itemInstance.GetComponent<ItemAudioManager>();
-            if (audioManager == null)
-            {
-                audioManager = itemInstance.AddComponent<ItemAudioManager>();
-            }
-            audioManager.listener = mainCamera;
-            audioManager.spawner = this;
-            audioManager.fadeInDuration = fadeInDuration;
-            audioManager.fadeOutDuration = fadeOutDuration;
-
-            float life;
-            if (profile != null)
-            {
-                audioManager.audioClips = profile.clips;
-                audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
-                // Guard against 0 (older profile assets predate these fields; Unity loads
-                // missing serialized fields as 0, which would make calls end instantly).
-                audioManager.callLengthMin = profile.callLengthMin > 0f ? profile.callLengthMin : 2f;
-                audioManager.callLengthMax = profile.callLengthMax > 0f ? profile.callLengthMax : 5f;
-                audioManager.gapMin = profile.gapMin > 0f ? profile.gapMin : 3f;
-                audioManager.gapMax = profile.gapMax > 0f ? profile.gapMax : 9f;
-                life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
-                ChangeCount(profile, 1);
-            }
-            else
-            {
-                audioManager.SetDistances(minDistance, audibleRadius);
-                life = Random.Range(rndTimeMin, rndTimeMax);
-            }
+            var audioManager = ConfigureSpawn(itemInstance, profile, out float life);
             audioManager.Play();
 
             Tile o = new Tile(cTime, itemInstance, life);
@@ -405,12 +399,90 @@ public class ItemSpawner : MonoBehaviour
         return false;
     }
 
+    // Get/attach the audio manager on a pooled instance and load it from the profile (or the
+    // fallback distances). Sets `life` and bumps the concurrency count. Shared by the perched
+    // and fly-over spawn paths so their audio setup can't drift apart.
+    private ItemAudioManager ConfigureSpawn(GameObject instance, SoundProfile profile, out float life)
+    {
+        var audioManager = instance.GetComponent<ItemAudioManager>();
+        if (audioManager == null)
+        {
+            audioManager = instance.AddComponent<ItemAudioManager>();
+        }
+        audioManager.listener = mainCamera;
+        audioManager.spawner = this;
+        audioManager.fadeInDuration = fadeInDuration;
+        audioManager.fadeOutDuration = fadeOutDuration;
+
+        if (profile != null)
+        {
+            audioManager.audioClips = profile.clips;
+            audioManager.SetDistances(profile.minDistance, profile.audibleRadius);
+            // Guard against 0 (older profile assets predate these fields; Unity loads
+            // missing serialized fields as 0, which would make calls end instantly).
+            audioManager.callLengthMin = profile.callLengthMin > 0f ? profile.callLengthMin : 2f;
+            audioManager.callLengthMax = profile.callLengthMax > 0f ? profile.callLengthMax : 5f;
+            audioManager.gapMin = profile.gapMin > 0f ? profile.gapMin : 3f;
+            audioManager.gapMax = profile.gapMax > 0f ? profile.gapMax : 9f;
+            audioManager.pitchJitter = profile.pitchJitter;
+            audioManager.gainJitter = profile.gainJitter;
+            life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
+            ChangeCount(profile, 1);
+        }
+        else
+        {
+            audioManager.SetDistances(minDistance, audibleRadius);
+            audioManager.pitchJitter = 0f;
+            audioManager.gainJitter = 0f;
+            life = Random.Range(rndTimeMin, rndTimeMax);
+        }
+        return audioManager;
+    }
+
+    // Spawn a mobile bird that crosses the sky over the player, calling as it goes. Placement is
+    // a chord through the player's audible range at a random heading/height; motion + audio are
+    // driven by ItemAudioManager.BeginFlight. Fly-overs ignore the grid cull and despawn purely
+    // by lifetime (set to the crossing time), so they aren't culled the instant they start
+    // outside the grid. Returns true on spawn.
+    private bool SpawnFlyover(float cTime, Dictionary<Vector3, Tile> map, SoundProfile profile)
+    {
+        float heading = Random.Range(0f, Mathf.PI * 2f);
+        Vector3 dir = new Vector3(Mathf.Cos(heading), 0f, Mathf.Sin(heading));
+        Vector3 side = new Vector3(-dir.z, 0f, dir.x); // perpendicular, to offset the chord
+        float reach = profile.audibleRadius;           // cross the full range this species carries
+        float offset = Random.Range(-reach * 0.5f, reach * 0.5f);
+        float height = Random.Range(flyoverHeightMin, flyoverHeightMax);
+
+        Vector3 center = player.transform.position + side * offset;
+        center.y = player.transform.position.y + height;
+        Vector3 from = center - dir * reach;
+        Vector3 to = center + dir * reach;
+
+        GameObject itemInstance = pool.Get();
+        itemInstance.transform.SetPositionAndRotation(from, Quaternion.LookRotation(dir));
+
+        var audioManager = ConfigureSpawn(itemInstance, profile, out float _);
+        // Live exactly long enough to cross (plus a margin), regardless of the profile lifetime.
+        float speed = Mathf.Max(flyoverSpeed, 0.1f);
+        float life = (to - from).magnitude / speed + 1f;
+        audioManager.Play();
+        audioManager.BeginFlight(from, to, speed);
+
+        Tile o = new Tile(cTime, itemInstance, life);
+        o.audioManager = audioManager;
+        o.profile = profile;
+        o.flying = true;
+        map[from] = o;
+        return true;
+    }
+
     private class Tile
     {
         public float cTimestamp;
         public GameObject tileObject;
         public ItemAudioManager audioManager;
         public SoundProfile profile;
+        public bool flying;      // fly-over: ignore grid cull, despawn by lifetime only
         public float activationTime;
         public float rndTime;
 

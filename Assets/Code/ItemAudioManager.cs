@@ -27,7 +27,15 @@ public class ItemAudioManager : MonoBehaviour
     public float gapMin = 3f;
     public float gapMax = 9f;
 
-    // Envelope: final volume = fade. Direction/loudness come from the AudioSource's 3D rolloff.
+    // Variety (2.6): per-call pitch/gain jitter + no back-to-back clip repeats, so a bird
+    // calling repeatedly from one spot (and clusters of the same species) don't read as a loop.
+    // Set per-spawn from the SoundProfile.
+    public float pitchJitter = 0f;
+    public float gainJitter = 0f;
+    private int lastClipIndex = -1;
+    private float callGain = 1f; // per-call level multiplier, folded into the envelope
+
+    // Envelope: final volume = fade * callGain. Direction/loudness come from the 3D rolloff.
     private float fade = 0f;
     private float fadeTarget = 0f;
     private bool releasing = false; // fade out then return to pool
@@ -35,6 +43,12 @@ public class ItemAudioManager : MonoBehaviour
     private bool calling = false;   // true during a call, false during a gap
     private float callEndTime = 0f;
     private float gapEndTime = 0f;
+
+    // Flyover (2.2): when set, the source glides from flyFrom to flyTo across the sky while it
+    // calls, instead of staying put. Enabled per-spawn via BeginFlight (mobile species only).
+    private bool flying = false;
+    private Vector3 flyTo = Vector3.zero;
+    private float flySpeed = 0f;
 
     void Awake()
     {
@@ -65,8 +79,20 @@ public class ItemAudioManager : MonoBehaviour
         releasing = false;
         audible = true;
         fade = 0f;
+        flying = false;      // perched by default; BeginFlight (post-Play) opts a spawn into motion
+        lastClipIndex = -1;  // fresh individual: no previous clip to avoid yet
         VoiceManager.Instance.Register(this);
         StartCall();
+    }
+
+    // Spawner: turn this individual into a fly-over gliding from -> to across the sky. Call
+    // after Play(). Reset each Play() so a pooled object reused as a perched bird stays put.
+    public void BeginFlight(Vector3 from, Vector3 to, float speed)
+    {
+        flying = true;
+        flyTo = to;
+        flySpeed = speed;
+        transform.position = from;
     }
 
     // Begin one call: fresh clip at a random offset, so a bird sings a different snippet
@@ -75,6 +101,9 @@ public class ItemAudioManager : MonoBehaviour
     {
         calling = true;
         callEndTime = Time.time + Random.Range(callLengthMin, callLengthMax);
+        // Per-call variety: slight pitch shift + level trim, and never the same clip twice running.
+        audioSource.pitch = 1f + Random.Range(-pitchJitter, pitchJitter);
+        callGain = 1f + Random.Range(-gainJitter, gainJitter);
         audioSource.volume = 0f;
         audioSource.clip = SelectRandomClip();
         audioSource.Play();
@@ -151,6 +180,13 @@ public class ItemAudioManager : MonoBehaviour
             return;
         }
 
+        // Flyover: glide across the sky whether calling or in a gap, so the pass reads as one
+        // bird moving overhead. Reaching the far point just stops motion; lifetime/grid despawn.
+        if (flying)
+        {
+            transform.position = Vector3.MoveTowards(transform.position, flyTo, flySpeed * Time.deltaTime);
+        }
+
         if (!releasing)
         {
             // Call/gap cycle: sing for a call length, go quiet for a gap, repeat.
@@ -175,7 +211,7 @@ public class ItemAudioManager : MonoBehaviour
 
         if (audioSource.isPlaying)
         {
-            audioSource.volume = fade;
+            audioSource.volume = fade * callGain;
         }
 
         if (fade <= 0.0001f)
@@ -198,26 +234,57 @@ public class ItemAudioManager : MonoBehaviour
         VoiceManager.UnregisterSafe(this);
     }
 
+    // Weighted pick that avoids repeating the immediately-previous clip when the species has
+    // more than one variation (2.6 anti-repetition). Falls back gracefully with 0/1 clips.
     private AudioClip SelectRandomClip()
     {
-        float totalWeight = 0f;
-        foreach (var weightedClip in audioClips)
+        if (audioClips.Length == 0)
         {
-            totalWeight += weightedClip.weight;
+            return null;
+        }
+        if (audioClips.Length == 1)
+        {
+            lastClipIndex = 0;
+            return audioClips[0].clip;
         }
 
-        float randomValue = Random.Range(0, totalWeight);
-        float cumulativeWeight = 0f;
-
-        foreach (var weightedClip in audioClips)
+        // Total weight excluding the last-played clip, so we never pick it twice in a row.
+        float totalWeight = 0f;
+        for (int i = 0; i < audioClips.Length; i++)
         {
-            cumulativeWeight += weightedClip.weight;
+            if (i == lastClipIndex)
+            {
+                continue;
+            }
+            totalWeight += audioClips[i].weight;
+        }
+        // Degenerate weights (all zero / only the excluded one had weight): just advance off last.
+        if (totalWeight <= 0f)
+        {
+            int idx = (lastClipIndex + 1) % audioClips.Length;
+            lastClipIndex = idx;
+            return audioClips[idx].clip;
+        }
+
+        float randomValue = Random.Range(0f, totalWeight);
+        float cumulativeWeight = 0f;
+        for (int i = 0; i < audioClips.Length; i++)
+        {
+            if (i == lastClipIndex)
+            {
+                continue;
+            }
+            cumulativeWeight += audioClips[i].weight;
             if (randomValue < cumulativeWeight)
             {
-                return weightedClip.clip;
+                lastClipIndex = i;
+                return audioClips[i].clip;
             }
         }
 
-        return audioClips[0].clip;
+        // Fallback: first clip that isn't the last one.
+        int fallback = lastClipIndex == 0 ? 1 : 0;
+        lastClipIndex = fallback;
+        return audioClips[fallback].clip;
     }
 }

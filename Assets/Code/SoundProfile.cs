@@ -50,4 +50,15 @@ public class SoundProfile : ScriptableObject
     [Range(0f, 1f)] public float neighborBias = 0f;
     [Tooltip("How far from an existing individual a clustered spawn can land (world units).")]
     public float neighborRadius = 25f;
+
+    [Header("Variety (anti-repetition, per call)")]
+    [Tooltip("Random pitch spread per call (±fraction). Keeps repeated calls from sounding identical.")]
+    [Range(0f, 0.5f)] public float pitchJitter = 0.06f;
+    [Tooltip("Random gain spread per call (±fraction). Subtle level variation between calls.")]
+    [Range(0f, 0.5f)] public float gainJitter = 0.12f;
+
+    [Header("Flyover (mobile species only)")]
+    [Tooltip("If set, this species can spawn as a moving fly-over (bird passing overhead) when " +
+             "the spawner's flyovers are enabled. Leave off for perched/understory birds.")]
+    public bool canFlyover = false;
 }

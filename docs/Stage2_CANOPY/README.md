@@ -15,8 +15,8 @@ world feels real, not like one repeating clip.
   configures each spawn from its profile. Authored BlueJay/Junco/Sparrow/Woodpecker.
   Adding a species = author an asset. (Assign `Forest` to ItemSpawner ▸ Biome to activate;
   unassigned = fallback.)
-- ◐ **2.2 Bird system, persistence & call-response.** Species + **rarity tiers** (done via
-  SoundProfile weights).
+- ☑ **2.2 Bird system, persistence & call-response.** Species + **rarity tiers** (done via
+  SoundProfile weights). *(all sub-items implemented; pending in-editor play-test.)*
   - ☑ **Persistent individuals.** An individual now occupies a spot and calls
     *intermittently* (call → gap → call) for its whole presence (15–30s), then leaves —
     fixes the teleporting. Per-species `callLength`/`gap` on the profile.
@@ -25,7 +25,12 @@ world feels real, not like one repeating clip.
     `neighborBias` (0 = spread evenly, 1 = always cluster) + `neighborRadius` on the profile;
     clustered spawns skip the density gate so the anchor drives the clustering. *(needs
     in-editor tuning: set neighborBias per species and play-test.)*
-  - ☐ Overhead flight behaviors.
+  - ☑ **Overhead flight behaviors.** Mobile species can spawn as fly-overs that glide a chord
+    across the sky over the player (random heading/height, calling as they pass), driven by
+    `ItemAudioManager.BeginFlight`. Master on/off + chance/speed/height on ItemSpawner
+    (`enableFlyovers`); per-species opt-in via `canFlyover` (set on Blue Jay, American Crow,
+    Mourning Dove — the open-air fliers). Fly-overs despawn by crossing time, not grid bounds.
+    *(needs in-editor play-test.)*
 - ◐ **2.3 Wind & leaves / ambient bed.** *Done:* `AmbientBed` — continuous dual-source
   **crossfade loop** (2D, never cuts out), auto-created from `biome.bedClip` (Connecticut
   forest ambience wired in). *Later:* variable strength + weather hook, separate
@@ -36,8 +41,11 @@ world feels real, not like one repeating clip.
   crunch** underfoot, occasional **stick/branch snap**, over terrain. Makes the player's
   own movement audibly part of the 3D space (pairs with 2.8). Plus cicadas / distant deer
   calls as occasional events.
-- ☐ **2.6 Variety & anti-repetition.** Expand weighted selection; forbid immediate
-  repeats; randomize pitch/gain slightly per play for naturalism.
+- ☑ **2.6 Variety & anti-repetition.** Weighted clip selection now forbids back-to-back
+  repeats of the same variation, and each call gets slight pitch + gain jitter
+  (per-species `pitchJitter`/`gainJitter` on the profile). Keeps a repeatedly-calling bird —
+  and clusters of the same species — from reading as one looped sample. *(needs in-editor
+  play-test.)*
 - ☐ **2.7 Spatial mix polish.** Tune distance attenuation + reverb per area so space
   feels believable (pairs with the Stage 3 spatializer choice).
 - ☐ **2.8 Wildlife awareness of the player.** Animals react to you: discrete vocal
@@ -57,7 +65,7 @@ shippable checkpoints. **2.0 (audio haul) runs in the background the whole time.
   push Perlin density up without dead-silent patches.
   *Done when:* spawns are driven by SO definitions and an always-on ambient floor plays under everything.
 
-- **C2 — Birdlife** → 2.2 + 2.6
+- **C2 — Birdlife** → 2.2 + 2.6 — ◐ *code-complete, awaiting play-test*
   Species with rarity tiers + basic behavior (chirp/song/call-response), plus
   anti-repetition (no immediate repeats, per-play pitch/gain jitter).
   *Done when:* varied, non-repeating birds with rarity read as alive, not looped.

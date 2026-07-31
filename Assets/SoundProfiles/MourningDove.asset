@@ -25,3 +25,4 @@ MonoBehaviour:
   audibleRadius: 100
   lifetimeMin: 15
   lifetimeMax: 30
+  canFlyover: 1
