@@ -26,3 +26,9 @@ MonoBehaviour:
   lifetimeMin: 15
   lifetimeMax: 30
   canFlyover: 1
+  enabled: 1
+  fixedStart: 1
+  fadeIn: 0.4
+  fadeOut: 1.2
+  callLengthMin: 18
+  callLengthMax: 20

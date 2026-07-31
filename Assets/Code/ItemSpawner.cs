@@ -158,18 +158,8 @@ public class ItemSpawner : MonoBehaviour
         return biome != null && biome.profiles != null && biome.profiles.Length > 0;
     }
 
-    // A profile can spawn now if it's an enabled, non-bed species under its concurrency cap.
-    // Single predicate so the two passes in SelectProfile can't drift apart.
-    private bool IsSpawnable(SoundProfile p)
-    {
-        return p != null
-            && p.enabled
-            && p.layer != SoundLayer.Bed
-            && CurrentCount(p) < p.maxConcurrent;
-    }
-
-    // Weighted-random pick over eligible profiles (enabled, discrete layers, under their
-    // concurrency cap). Returns null if no biome is assigned (→ fallback) or none are eligible.
+    // Weighted-random pick over eligible profiles (discrete layers, under their concurrency
+    // cap). Returns null if no biome is assigned (→ fallback) or all profiles are capped.
     private SoundProfile SelectProfile()
     {
         if (!HasBiome())
@@ -179,7 +169,7 @@ public class ItemSpawner : MonoBehaviour
         float total = 0f;
         foreach (var p in biome.profiles)
         {
-            if (IsSpawnable(p))
+            if (p != null && p.enabled && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent)
             {
                 total += p.spawnWeight;
             }
@@ -192,7 +182,7 @@ public class ItemSpawner : MonoBehaviour
         float cum = 0f;
         foreach (var p in biome.profiles)
         {
-            if (IsSpawnable(p))
+            if (p != null && p.enabled && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent)
             {
                 cum += p.spawnWeight;
                 if (r < cum)
@@ -436,6 +426,9 @@ public class ItemSpawner : MonoBehaviour
             audioManager.gapMax = profile.gapMax > 0f ? profile.gapMax : 9f;
             audioManager.pitchJitter = profile.pitchJitter;
             audioManager.gainJitter = profile.gainJitter;
+            audioManager.fixedStart = profile.fixedStart;
+            if (profile.fadeIn > 0f) audioManager.fadeInDuration = profile.fadeIn;
+            if (profile.fadeOut > 0f) audioManager.fadeOutDuration = profile.fadeOut;
             life = Random.Range(profile.lifetimeMin, profile.lifetimeMax);
             ChangeCount(profile, 1);
         }

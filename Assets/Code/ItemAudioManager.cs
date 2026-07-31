@@ -26,6 +26,7 @@ public class ItemAudioManager : MonoBehaviour
     public float callLengthMax = 5f;
     public float gapMin = 3f;
     public float gapMax = 9f;
+    public bool fixedStart = false; // start each call from 0 (full clip) vs a random slice
 
     // Variety (2.6): per-call pitch/gain jitter + no back-to-back clip repeats, so a bird
     // calling repeatedly from one spot (and clusters of the same species) don't read as a loop.
@@ -107,9 +108,13 @@ public class ItemAudioManager : MonoBehaviour
         audioSource.volume = 0f;
         audioSource.clip = SelectRandomClip();
         audioSource.Play();
-        if (audioSource.clip != null && audioSource.clip.length > 2f)
+        if (!fixedStart && audioSource.clip != null && audioSource.clip.length > 2f)
         {
             audioSource.time = Random.Range(0f, audioSource.clip.length - 1f);
+        }
+        else
+        {
+            audioSource.time = 0f;
         }
     }
 

@@ -25,3 +25,4 @@ MonoBehaviour:
   audibleRadius: 120
   lifetimeMin: 15
   lifetimeMax: 30
+  enabled: 1

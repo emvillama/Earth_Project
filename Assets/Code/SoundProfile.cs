@@ -10,11 +10,9 @@ public enum SoundLayer { Bed, Event, Rare }
 public class SoundProfile : ScriptableObject
 {
     public string displayName;
-    public SoundLayer layer = SoundLayer.Event;
-
-    [Tooltip("Uncheck to turn this species off without removing it from the biome. Takes effect " +
-             "live in Play mode.")]
+    [Tooltip("Uncheck to disable this species entirely — it won't spawn.")]
     public bool enabled = true;
+    public SoundLayer layer = SoundLayer.Event;
 
     [Header("Clips")]
     [Tooltip("Clip variations for this species; internal weights choose between them per play.")]
@@ -65,4 +63,12 @@ public class SoundProfile : ScriptableObject
     [Tooltip("If set, this species can spawn as a moving fly-over (bird passing overhead) when " +
              "the spawner's flyovers are enabled. Leave off for perched/understory birds.")]
     public bool canFlyover = false;
+
+    [Header("Playback")]
+    [Tooltip("Start each call from the beginning and play full, instead of a random slice (e.g. a dove's coo).")]
+    public bool fixedStart = false;
+    [Tooltip("Fade-in seconds (0 = use the global default).")]
+    public float fadeIn = 0f;
+    [Tooltip("Fade-out seconds (0 = use the global default).")]
+    public float fadeOut = 0f;
 }

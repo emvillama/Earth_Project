@@ -26,3 +26,4 @@ MonoBehaviour:
   lifetimeMin: 15
   lifetimeMax: 30
   canFlyover: 1
+  enabled: 1
