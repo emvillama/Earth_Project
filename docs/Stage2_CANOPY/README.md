@@ -15,15 +15,14 @@ world feels real, not like one repeating clip.
   configures each spawn from its profile. Authored BlueJay/Junco/Sparrow/Woodpecker.
   Adding a species = author an asset. (Assign `Forest` to ItemSpawner ▸ Biome to activate;
   unassigned = fallback.)
-- ☐ **2.2 Bird system, persistence & call-response.** Species + **rarity tiers**
-  (Common: Jay/Robin · Rare: Hawk/Falcon · Epic: Eagle).
-  - **Persistent individuals (highest-impact realism fix).** An animal occupies a spot
-    and calls *intermittently* over a longer life (call → gap → call), then moves on —
-    fixing the current "teleporting" where every call is a fresh random position.
-  - **Call-and-response.** New calls cluster in time and space *near existing birds*
-    (spawn-near-neighbor bias) instead of firing sporadically everywhere.
-  - Spawn height / overhead flight behaviors.
-  *Note: this is the top realism lever after the bed — worth doing right after 2.3.*
+- ◐ **2.2 Bird system, persistence & call-response.** Species + **rarity tiers** (done via
+  SoundProfile weights).
+  - ☑ **Persistent individuals.** An individual now occupies a spot and calls
+    *intermittently* (call → gap → call) for its whole presence (15–30s), then leaves —
+    fixes the teleporting. Per-species `callLength`/`gap` on the profile.
+  - ☐ **Call-and-response.** New calls cluster in time/space *near existing birds*
+    (spawn-near-neighbor bias) instead of firing everywhere. *(next)*
+  - ☐ Overhead flight behaviors.
 - ◐ **2.3 Wind & leaves / ambient bed.** *Done:* `AmbientBed` — continuous dual-source
   **crossfade loop** (2D, never cuts out), auto-created from `biome.bedClip` (Connecticut
   forest ambience wired in). *Later:* variable strength + weather hook, separate
