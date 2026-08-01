@@ -1,74 +1,96 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// River / stream (CANOPY 2.4) — a single, discoverable, wandering river (Minecraft-style).
+// River / stream (CANOPY 2.4) — a single, discoverable, wandering river that behaves naturally.
 //
-// There is never more than one river. When none exists, it periodically has a *chance* to
-// seed at a random spot away from the player, so you only "come upon" one as you explore.
-// Its course is a smooth meander (gentle seeded turns — windy, not straight, and consistent
-// if you backtrack) that extends whichever way you follow it. Width varies along its length
-// (smooth noise) so stretches are wide/loud or a quiet trickle. Walk far enough from it and
-// you leave it behind; after a cooldown a new one can appear elsewhere.
+// * One at a time. While none exists, it has a tunable chance to seed at a random nearby spot;
+//   you only hear it once you wander into earshot (emitters fade in gradually) — you come upon it.
+// * The course is a smooth seeded meander (windy, consistent if you backtrack) that winds on its
+//   own — it does NOT follow the player.
+// * Width varies along its length; thin stretches are a quiet trickle, wide ones roar. Where it
+//   thins there's a chance it simply ENDS (a source/mouth), so it isn't infinite and won't keep
+//   extending into newly generated terrain.
+// * Leave earshot -> dormant (audio off, node memory freed, seed kept so returning finds the SAME
+//   river). Get ~forgetGrids grids away -> forgotten for good; a new one can appear elsewhere.
 //
-// Emitters are static 3D looping sources placed along the nearby stretch of the course
-// (volume + radius scaled by local width), started at random loop offsets so they don't flange.
-// Auto-created by ItemSpawner when the biome has a riverClip.
+// Emitters are static 3D looping sources (volume + radius scaled by local width, started at random
+// loop offsets so they don't flange). Auto-created by ItemSpawner when the biome has a riverClip.
 public class RiverSystem : MonoBehaviour
 {
     [Header("Discovery (one river at a time)")]
     public bool riverActive = true;
-    [Tooltip("Chance, each ~2s while no river exists, that one appears nearby. Higher = come upon rivers more often.")]
+    [Tooltip("Chance, each ~2s while no river exists, that one seeds nearby. Higher = find rivers more often.")]
     [Range(0f, 1f)] public float discoveryChance = 0.12f;
-    [Tooltip("How far away a new river seeds from you (you then wander into earshot).")]
     public float discoverMin = 45f;
     public float discoverMax = 95f;
-    [Tooltip("Leave the river by this distance and it despawns (a new one can appear later).")]
-    public float leaveDistance = 140f;
+    [Tooltip("One grid = the spawn radius (150).")]
+    public float gridSize = 150f;
+    [Tooltip("Leave earshot by this and the river goes dormant (audio off, memory freed) but is re-findable.")]
+    public float leaveDistance = 70f;
+    [Tooltip("Get this many grids from a dormant river and it's forgotten for good.")]
+    public float forgetGrids = 5f;
     public float rediscoverCooldown = 12f;
 
     [Header("Course shape (windiness)")]
-    [Tooltip("Spacing between course nodes.")]
     public float segmentLength = 12f;
-    [Tooltip("Max bend per segment — higher = curvier river.")]
     [Range(0f, 45f)] public float maxTurnDeg = 20f;
+    [Tooltip("Node cap each direction — hard limit on river length.")]
+    public int maxLength = 240;
 
-    [Header("Width: wide/loud vs narrow/trickle")]
+    [Header("Width: wide/loud vs trickle, and ending")]
     [Range(0f, 1f)] public float widthMin = 0.3f;
     [Range(0f, 1f)] public float widthMax = 1f;
-    [Tooltip("How quickly width varies along the river (smaller = long wide/narrow stretches).")]
     public float widthNoiseScale = 0.11f;
+    [Tooltip("Below this width the river may taper out and end.")]
+    public float endThreshold = 0.34f;
+    [Range(0f, 1f)] public float endChance = 0.3f;
 
     [Header("Sound")]
     public float baseVolume = 0.7f;
-    [Tooltip("Audible radius at full width (scaled down for trickles).")]
     public float baseRadius = 34f;
     public float groundY = 9f;
+    [Tooltip("Seconds each emitter fades in (so the river is heard gradually, not instantly).")]
+    public float fadeIn = 1.6f;
 
     public AudioClip waterClip;
     public Transform player;
 
     private struct RNode { public Vector3 pos; public float headingRad; public float width; }
+    private class Em { public AudioSource src; public float target; public float fadeStart; }
+
     private readonly Dictionary<int, RNode> nodes = new Dictionary<int, RNode>();
-    private readonly Dictionary<int, AudioSource> emitters = new Dictionary<int, AudioSource>();
+    private readonly Dictionary<int, Em> emitters = new Dictionary<int, Em>();
     private readonly Stack<AudioSource> pool = new Stack<AudioSource>();
     private readonly List<int> scratch = new List<int>();
 
-    private bool hasRiver;
-    private float riverSeed;
-    private Vector3 origin;
-    private float baseHeadingRad;
-    private int nearIndex;
+    private enum State { None, Active, Dormant }
+    private State state = State.None;
+    private float riverSeed, baseHeadingRad;
+    private Vector3 origin, dormantAnchor;
+    private int nearIndex, endLow, endHigh;
     private float tick, discoverTick, cooldown;
 
     private float TurnRad(int i)
     {
-        // smooth seeded turn per segment → gentle, natural meander (not jagged)
         return (Mathf.PerlinNoise(riverSeed + i * 0.35f, 13.7f) * 2f - 1f) * (maxTurnDeg * Mathf.Deg2Rad);
     }
 
     private float WidthAt(int i)
     {
         return Mathf.Lerp(widthMin, widthMax, Mathf.PerlinNoise(riverSeed * 0.5f + i * widthNoiseScale, 71.3f));
+    }
+
+    private bool EndsAt(int i)
+    {
+        return WidthAt(i) < endThreshold && Mathf.PerlinNoise(riverSeed * 0.7f + i * 0.9f, 41f) < endChance;
+    }
+
+    private void ComputeEnds()
+    {
+        endHigh = maxLength;
+        for (int i = 1; i <= maxLength; i++) { if (EndsAt(i)) { endHigh = i; break; } }
+        endLow = -maxLength;
+        for (int i = -1; i >= -maxLength; i--) { if (EndsAt(i)) { endLow = i; break; } }
     }
 
     private RNode Node(int i)
@@ -86,7 +108,7 @@ public class RiverSystem : MonoBehaviour
             r.headingRad = p.headingRad + TurnRad(i);
             r.pos = p.pos + new Vector3(Mathf.Cos(r.headingRad), 0f, Mathf.Sin(r.headingRad)) * segmentLength;
         }
-        else // i < 0: step backward from node i+1
+        else
         {
             RNode p = Node(i + 1);
             r.headingRad = p.headingRad - TurnRad(i + 1);
@@ -100,9 +122,20 @@ public class RiverSystem : MonoBehaviour
 
     void Update()
     {
+        // Per-frame gradual fade-in on active emitters.
+        if (state == State.Active)
+        {
+            foreach (var kv in emitters)
+            {
+                Em e = kv.Value;
+                float f = Mathf.Clamp01((Time.time - e.fadeStart) / Mathf.Max(0.01f, fadeIn));
+                e.src.volume = e.target * f;
+            }
+        }
+
         if (player == null || waterClip == null || !riverActive)
         {
-            if (hasRiver && !riverActive) Despawn();
+            if (state != State.None && !riverActive) ForceNone();
             return;
         }
 
@@ -110,67 +143,73 @@ public class RiverSystem : MonoBehaviour
         if (tick < 0.25f) return;
         tick = 0f;
 
-        if (!hasRiver)
+        switch (state)
         {
-            if (cooldown > 0f) { cooldown -= 0.25f; return; }
-            discoverTick += 0.25f;
-            if (discoverTick >= 2f)
-            {
-                discoverTick = 0f;
-                if (Random.value < discoveryChance) Discover();
-            }
-            return;
-        }
+            case State.None:
+                if (cooldown > 0f) { cooldown -= 0.25f; break; }
+                discoverTick += 0.25f;
+                if (discoverTick >= 2f) { discoverTick = 0f; if (Random.value < discoveryChance) Discover(); }
+                break;
 
-        // Track the node nearest the player (local search along the course).
-        UpdateNearIndex();
-        float nearestDist = Vector3.Distance(player.position, Node(nearIndex).pos);
-        if (nearestDist > leaveDistance)
-        {
-            Despawn();
-            cooldown = rediscoverCooldown;
-            return;
-        }
+            case State.Active:
+                UpdateNearIndex();
+                float nd = Vector3.Distance(player.position, Node(Mathf.Clamp(nearIndex, endLow, endHigh)).pos);
+                if (nd > leaveDistance) GoDormant();
+                else ManageEmitters();
+                break;
 
-        // Place emitters along the nearby stretch; recycle the rest.
+            case State.Dormant:
+                float dd = Vector3.Distance(player.position, dormantAnchor);
+                if (dd > forgetGrids * gridSize) { state = State.None; cooldown = rediscoverCooldown; }
+                else if (dd < leaveDistance) Reactivate();
+                break;
+        }
+    }
+
+    private void ManageEmitters()
+    {
         int span = Mathf.CeilToInt((baseRadius + segmentLength) / segmentLength) + 1;
-        for (int k = nearIndex - span; k <= nearIndex + span; k++)
+        int lo = Mathf.Max(nearIndex - span, endLow);
+        int hi = Mathf.Min(nearIndex + span, endHigh);
+        for (int k = lo; k <= hi; k++)
         {
             RNode nd = Node(k);
             float radius = baseRadius * nd.width;
             float vol = baseVolume * nd.width;
-            if (emitters.TryGetValue(k, out var live))
+            if (emitters.TryGetValue(k, out var e))
             {
-                live.maxDistance = radius;
-                live.volume = vol;
-                continue;
+                e.src.maxDistance = radius;
+                e.target = vol;
             }
-            AudioSource src = GetEmitter();
-            src.transform.position = nd.pos;
-            src.maxDistance = radius;
-            src.volume = vol;
-            src.Play();
-            if (waterClip.length > 1f) src.time = Random.Range(0f, waterClip.length);
-            emitters[k] = src;
+            else
+            {
+                AudioSource src = GetEmitter();
+                src.transform.position = nd.pos;
+                src.maxDistance = radius;
+                src.volume = 0f;
+                src.Play();
+                if (waterClip.length > 1f) src.time = Random.Range(0f, waterClip.length);
+                emitters[k] = new Em { src = src, target = vol, fadeStart = Time.time };
+            }
         }
         scratch.Clear();
-        foreach (var kv in emitters)
-            if (kv.Key < nearIndex - span || kv.Key > nearIndex + span) scratch.Add(kv.Key);
-        foreach (int k in scratch) { Recycle(emitters[k]); emitters.Remove(k); }
+        foreach (var kv in emitters) if (kv.Key < lo || kv.Key > hi) scratch.Add(kv.Key);
+        foreach (int k in scratch) { Recycle(emitters[k].src); emitters.Remove(k); }
     }
 
     private void UpdateNearIndex()
     {
-        // walk the index toward the player's nearest node (a few steps per tick is plenty)
-        for (int step = 0; step < 6; step++)
+        for (int s = 0; s < 6; s++)
         {
-            float d0 = (Node(nearIndex).pos - player.position).sqrMagnitude;
-            float dUp = (Node(nearIndex + 1).pos - player.position).sqrMagnitude;
-            float dDn = (Node(nearIndex - 1).pos - player.position).sqrMagnitude;
-            if (dUp < d0 && dUp <= dDn) nearIndex++;
-            else if (dDn < d0) nearIndex--;
+            int c = Mathf.Clamp(nearIndex, endLow, endHigh);
+            float d0 = (Node(c).pos - player.position).sqrMagnitude;
+            float du = (nearIndex + 1 <= endHigh) ? (Node(nearIndex + 1).pos - player.position).sqrMagnitude : float.MaxValue;
+            float dn = (nearIndex - 1 >= endLow) ? (Node(nearIndex - 1).pos - player.position).sqrMagnitude : float.MaxValue;
+            if (du < d0 && du <= dn) nearIndex++;
+            else if (dn < d0) nearIndex--;
             else break;
         }
+        nearIndex = Mathf.Clamp(nearIndex, endLow, endHigh);
     }
 
     private void Discover()
@@ -182,16 +221,33 @@ public class RiverSystem : MonoBehaviour
         riverSeed = Random.value * 1000f;
         baseHeadingRad = Random.value * Mathf.PI * 2f;
         nodes.Clear();
+        ComputeEnds();
         nearIndex = 0;
-        hasRiver = true;
+        state = State.Active;
     }
 
-    private void Despawn()
+    private void GoDormant()
     {
-        foreach (var kv in emitters) Recycle(kv.Value);
+        dormantAnchor = Node(Mathf.Clamp(nearIndex, endLow, endHigh)).pos;
+        foreach (var kv in emitters) Recycle(kv.Value.src);
+        emitters.Clear();
+        nodes.Clear(); // free memory; seed kept so we regenerate the same river on return
+        state = State.Dormant;
+    }
+
+    private void Reactivate()
+    {
+        nodes.Clear();
+        ComputeEnds();
+        state = State.Active; // same seed -> same course
+    }
+
+    private void ForceNone()
+    {
+        foreach (var kv in emitters) Recycle(kv.Value.src);
         emitters.Clear();
         nodes.Clear();
-        hasRiver = false;
+        state = State.None;
     }
 
     private AudioSource GetEmitter()
