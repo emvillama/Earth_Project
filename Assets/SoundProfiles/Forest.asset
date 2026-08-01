@@ -35,3 +35,4 @@ MonoBehaviour:
   bedClip: {fileID: 0}
   bedVolume: 0.45
   bedCrossfade: 3
+  riverClip: {fileID: 8300000, guid: e8b5e0ee004c2948515918e7f9ca85a5, type: 3}

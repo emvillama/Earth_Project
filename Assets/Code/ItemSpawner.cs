@@ -113,6 +113,15 @@ public class ItemSpawner : MonoBehaviour
                 var bedGo = new GameObject("AmbientBed");
                 bedGo.AddComponent<AmbientBed>().Init(biome.bedClip, biome.bedVolume, biome.bedCrossfade);
             }
+
+            // River / stream (2.4): world-anchored chain of looping water emitters.
+            if (biome.riverClip != null)
+            {
+                var riverGo = new GameObject("RiverSystem");
+                var river = riverGo.AddComponent<RiverSystem>();
+                river.player = player != null ? player.transform : null;
+                river.waterClip = biome.riverClip;
+            }
         }
 
         ManageItems(Time.realtimeSinceStartup);

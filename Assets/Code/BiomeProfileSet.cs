@@ -25,4 +25,8 @@ public class BiomeProfileSet : ScriptableObject
     public AudioClip bedClip;
     [Range(0f, 1f)] public float bedVolume = 0.45f;
     public float bedCrossfade = 2f;
+
+    [Header("River / stream (2.4)")]
+    [Tooltip("Flowing-water loop for the river. Empty = no river. Ideally a seamless stream loop.")]
+    public AudioClip riverClip;
 }
