@@ -21,8 +21,8 @@ public class RiverSystem : MonoBehaviour
     public bool riverActive = true;
     [Tooltip("Chance, each ~2s while no river exists, that one seeds nearby. Higher = find rivers more often.")]
     [Range(0f, 1f)] public float discoveryChance = 0.12f;
-    public float discoverMin = 45f;
-    public float discoverMax = 95f;
+    public float discoverMin = 65f;
+    public float discoverMax = 115f;
     [Tooltip("One grid = the spawn radius (150).")]
     public float gridSize = 150f;
     [Tooltip("Leave earshot by this and the river goes dormant (audio off, memory freed) but is re-findable.")]
@@ -50,7 +50,7 @@ public class RiverSystem : MonoBehaviour
     public float baseRadius = 34f;
     public float groundY = 9f;
     [Tooltip("Seconds each emitter fades in (so the river is heard gradually, not instantly).")]
-    public float fadeIn = 1.6f;
+    public float fadeIn = 2.5f;
 
     public AudioClip waterClip;
     public Transform player;

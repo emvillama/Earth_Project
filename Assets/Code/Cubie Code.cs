@@ -7,7 +7,7 @@ public class Cubie : MonoBehaviour
     public Transform cameraTransform; // Reference to the camera object
     public float mouseSens = 5f;
     float cameraVertRotation = 0f;
-    public int playerSpeed = 5;
+    public float playerSpeed = 1.5f; // ~walking pace (m/s); tune in the Inspector
     private Rigidbody rb;
     private IInputSource input;
 
