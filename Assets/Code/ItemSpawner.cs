@@ -124,6 +124,10 @@ public class ItemSpawner : MonoBehaviour
             }
         }
 
+        // 2.7 spatial mix: forest reverb that follows the player.
+        var reverbGo = new GameObject("ForestReverb");
+        reverbGo.AddComponent<ForestReverb>().player = player != null ? player.transform : null;
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
