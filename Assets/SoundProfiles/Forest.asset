@@ -29,9 +29,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ac805852cd923aa6fcc7ba52f8c6102c, type: 2}
   bedLayers:
   - clip: {fileID: 8300000, guid: ff2699e29ec5b07bf2b9d697f2d8ab21, type: 3}
-    volume: 0.5
+    volume: 0.1
   - clip: {fileID: 8300000, guid: c267a78f3166199340d66851fbeb224f, type: 3}
-    volume: 0.35
+    volume: 0.15
   bedClip: {fileID: 0}
   bedVolume: 0.45
   bedCrossfade: 3
