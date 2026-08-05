@@ -37,6 +37,15 @@ public class ItemSpawner : MonoBehaviour
     public bool enableWeather = true;
     private WeatherController weather;
 
+    [Header("Spawn density — per-period budget")]
+    [Tooltip("Max NEW sounds allowed to START within each rolling window — the main density dial. " +
+             "Steady-state concurrent callers ≈ this × (avg lifetime ÷ period). Lower = calmer forest.")]
+    public int spawnsPerPeriod = 8;
+    [Tooltip("Length of the rolling window the budget is measured over (seconds).")]
+    public float spawnPeriodSeconds = 30f;
+    // Timestamps of spawns inside the current rolling window (pruned each tick).
+    private readonly Queue<float> recentSpawns = new Queue<float>();
+
     [Header("Flyovers — live tuning")]
     [Tooltip("Master on/off for birds passing overhead. Only species with canFlyover are eligible.")]
     public bool enableFlyovers = false;
@@ -328,25 +337,27 @@ public class ItemSpawner : MonoBehaviour
             itemPos.Remove(loc);
         }
 
-        // Paced spawning: at most one new sound per spawn interval (up to itemMax), so the
-        // forest has natural ebb and flow instead of a nonstop wall of sound.
-        if (Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
+        // Spawn density: instead of "N sounds alive at any instant", the forest is governed by a
+        // budget of NEW sounds per rolling window (spawnsPerPeriod / spawnPeriodSeconds) — closer to
+        // how a real place has a rate of events over time. itemMax stays only as a hard safety cap.
+        while (recentSpawns.Count > 0 && recentSpawns.Peek() < Time.time - spawnPeriodSeconds)
+        {
+            recentSpawns.Dequeue();
+        }
+        int budget = Mathf.Max(1, spawnsPerPeriod);
+        if (recentSpawns.Count < budget && Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
         {
             // Weather hush: as a storm builds, fewer and fewer new calls fire, so wildlife falls
             // silent gradually. hush 0 = normal, 1 = (almost) nothing new spawns.
             float hush = weather != null ? weather.birdHush : 0f;
-            if (hush <= 0f || Random.value > hush)
+            bool allowed = hush <= 0f || Random.value > hush;
+            if (allowed && TrySpawnOne(cTime, newItemPos))
             {
-                if (TrySpawnOne(cTime, newItemPos))
-                {
-                    nextSpawnTime = Time.time + Random.Range(spawnIntervalMin, spawnIntervalMax);
-                }
+                recentSpawns.Enqueue(Time.time);
             }
-            else
-            {
-                // Skipped by weather — wait a beat before trying again so we don't busy-spin.
-                nextSpawnTime = Time.time + Random.Range(spawnIntervalMin, spawnIntervalMax);
-            }
+            // Space the budget out across the window (with jitter) so calls don't bunch at the start.
+            float avgGap = spawnPeriodSeconds / budget;
+            nextSpawnTime = Time.time + avgGap * Random.Range(0.55f, 1.45f);
         }
 
         itemPos = newItemPos;
