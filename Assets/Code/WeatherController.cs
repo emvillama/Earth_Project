@@ -105,12 +105,7 @@ public class WeatherController : MonoBehaviour
     {
         var go = new GameObject(name);
         go.transform.SetParent(transform);
-        var s = go.AddComponent<AudioSource>();
-        s.spatialBlend = 0f;  // weather is everywhere — a 2D layer
-        s.spatialize = false;
-        s.playOnAwake = false;
-        s.loop = loop;
-        return s;
+        return AudioFactory.Add2D(go, loop); // weather is everywhere — a 2D layer
     }
 
     private bool Active => spawner == null || spawner.enableWeather;

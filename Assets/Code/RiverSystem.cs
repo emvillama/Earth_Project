@@ -261,14 +261,8 @@ public class RiverSystem : MonoBehaviour
     {
         var go = new GameObject("RiverEmitter");
         go.transform.SetParent(transform);
-        var s = go.AddComponent<AudioSource>();
+        var s = AudioFactory.Add3D(go, loop: true, minDistance: 4f);
         s.clip = waterClip;
-        s.loop = true;
-        s.playOnAwake = false;
-        s.spatialBlend = 1f;
-        s.spatialize = false;
-        s.minDistance = 4f;
-        s.rolloffMode = AudioRolloffMode.Linear;
         return s;
     }
 

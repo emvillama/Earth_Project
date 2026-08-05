@@ -32,15 +32,11 @@ public class AmbientBed : MonoBehaviour
         {
             return;
         }
-        s0 = gameObject.AddComponent<AudioSource>();
-        s1 = gameObject.AddComponent<AudioSource>();
+        s0 = AudioFactory.Add2D(gameObject, loop: false); // 2D diffuse floor
+        s1 = AudioFactory.Add2D(gameObject, loop: false);
         foreach (var s in new[] { s0, s1 })
         {
             s.clip = clip;
-            s.loop = false;
-            s.playOnAwake = false;
-            s.spatialBlend = 0f; // 2D diffuse floor
-            s.spatialize = false;
             s.volume = 0f;
         }
         dur = (double)clip.samples / clip.frequency;
