@@ -10,7 +10,8 @@ using UnityEngine;
 //             stage, otherwise it starts Clearing.
 //   Clearing— easing off for ~stageSeconds; then `clearingRampUp` (10%) it flares back into a
 //             Storm, otherwise it settles into Calm.
-//   Calm    — the quiet after: crickets gone, few birds, no rain, for ~calmSeconds, then Clear.
+//   Calm    — the quiet after: ~30s near-silence, then birds ramp back in, then crickets ~60s
+//             after the birds; once both have returned, back to Clear.
 //
 // A single smoothed `intensity` (0..1) ramps toward each phase's target so everything grows and
 // fades gradually — wind swells first, then rain fills in, thunder gets more frequent and louder,
@@ -30,8 +31,16 @@ public class WeatherController : MonoBehaviour
     public float clearCheckSeconds = 300f;
     [Tooltip("How long each active phase (forming/storm/clearing) lasts before the next roll.")]
     public float stageSeconds = 120f;
-    [Tooltip("How long the quiet 'calm after the storm' lasts.")]
-    public float calmSeconds = 120f;
+
+    [Header("Calm after the storm (recovery timeline)")]
+    [Tooltip("Seconds of near-silence right after the storm before birds start returning.")]
+    public float calmQuietSeconds = 30f;
+    [Tooltip("Seconds birds take to ramp back to full once they start returning.")]
+    public float birdRampSeconds = 30f;
+    [Tooltip("Seconds AFTER the birds begin returning before crickets start coming back.")]
+    public float cricketDelayAfterBirds = 60f;
+    [Tooltip("Seconds crickets take to ramp back once they return.")]
+    public float cricketRampSeconds = 20f;
 
     [Header("Transition chances")]
     [Range(0f, 1f)] public float formChance = 0.10f;      // Clear -> Forming, per check
@@ -66,8 +75,8 @@ public class WeatherController : MonoBehaviour
 
     private enum Phase { Clear, Forming, Storm, Clearing, Calm }
     private Phase phase = Phase.Clear;
-    private bool postStorm = false;
     private float phaseTimer = 0f;
+    private float CricketReturnAt => calmQuietSeconds + cricketDelayAfterBirds; // from calm start
 
     private AudioSource rain, thunder;
     private AudioClip rainClip;
@@ -112,7 +121,7 @@ public class WeatherController : MonoBehaviour
 
         if (!Active)
         {
-            phase = Phase.Clear; postStorm = false; phaseTimer = 0f;
+            phase = Phase.Clear; phaseTimer = 0f;
             intensity = Mathf.MoveTowards(intensity, 0f, dt / Mathf.Max(1f, rampSeconds));
             ApplyAudio(dt);
             return;
@@ -154,7 +163,8 @@ public class WeatherController : MonoBehaviour
 
             case Phase.Calm:
                 target = 0f;
-                if (phaseTimer >= calmSeconds) { postStorm = false; Enter(Phase.Clear); }
+                // Stay in calm until both birds and crickets have fully returned, then resume Clear.
+                if (phaseTimer >= CricketReturnAt + cricketRampSeconds) Enter(Phase.Clear);
                 break;
         }
 
@@ -167,23 +177,34 @@ public class WeatherController : MonoBehaviour
     {
         phase = p;
         phaseTimer = 0f;
-        if (p == Phase.Calm) postStorm = true;   // crickets/birds stay suppressed through the calm
     }
 
     private void ApplyAudio(float dt)
     {
-        // Wind swells with intensity; crickets fade out as it builds and stay gone through the calm.
+        // During the calm after the storm, birds return first (after a quiet window), then crickets
+        // a while later — each ramping back gradually rather than snapping on.
+        float calmHush = 0f, calmCricketSuppress = 0f;
+        if (phase == Phase.Calm)
+        {
+            float t = phaseTimer;
+            calmHush = (t < calmQuietSeconds)
+                ? 1f - calmBirdActivity                                   // quiet window: only a few birds
+                : Mathf.Lerp(1f - calmBirdActivity, 0f, (t - calmQuietSeconds) / Mathf.Max(0.1f, birdRampSeconds));
+            calmCricketSuppress = (t < CricketReturnAt)
+                ? 1f                                                      // crickets still gone
+                : Mathf.Lerp(1f, 0f, (t - CricketReturnAt) / Mathf.Max(0.1f, cricketRampSeconds));
+        }
+
+        // Wind swells with intensity; crickets fade out as the storm builds and stay gone through the calm.
         if (windBed != null) windBed.volumeScale = 1f + intensity * windBoost;
         if (cricketBed != null)
         {
-            float suppress = Mathf.Max(Mathf.Clamp01(intensity * 1.6f), postStorm ? 1f : 0f);
+            float suppress = Mathf.Max(Mathf.Clamp01(intensity * 1.6f), calmCricketSuppress);
             cricketBed.volumeScale = Mathf.MoveTowards(cricketBed.volumeScale, 1f - suppress, dt * 0.7f);
         }
 
-        // Birds fall silent as the storm grows; only a few return during the calm after.
-        float hush = Mathf.Clamp01(intensity * 1.4f);
-        if (postStorm) hush = Mathf.Max(hush, 1f - calmBirdActivity);
-        birdHush = hush;
+        // Birds fall silent as the storm grows; return gradually through the calm.
+        birdHush = Mathf.Max(Mathf.Clamp01(intensity * 1.4f), calmHush);
 
         // Rain lags the wind in a bit, then fills to full.
         if (rain != null)
