@@ -11,6 +11,10 @@ public class AmbientBed : MonoBehaviour
     public float volume = 0.45f;
     public float crossfade = 3f;
 
+    // External multiplier (0..n) other systems push in — e.g. WeatherController swells the wind
+    // and silences the crickets during a storm. 1 = untouched. Smoothed by whoever drives it.
+    public float volumeScale = 1f;
+
     private AudioSource s0, s1;
     private double dur;
     private double start0, start1; // dsp start time of each source's current pass
@@ -99,6 +103,6 @@ public class AmbientBed : MonoBehaviour
         {
             k = 1f;
         }
-        return volume * Mathf.Sqrt(Mathf.Clamp01(k));
+        return volume * Mathf.Max(0f, volumeScale) * Mathf.Sqrt(Mathf.Clamp01(k));
     }
 }

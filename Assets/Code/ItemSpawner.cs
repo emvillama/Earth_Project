@@ -31,6 +31,12 @@ public class ItemSpawner : MonoBehaviour
     [Tooltip("Global cluster radius while override is on (world units).")]
     public float neighborRadiusOverride = 20f;
 
+    [Header("Weather")]
+    [Tooltip("Master on/off for dynamic weather (thunderstorms). Toggle live to test. " +
+             "Lower the timing values on the WeatherSystem object to cycle storms fast.")]
+    public bool enableWeather = true;
+    private WeatherController weather;
+
     [Header("Flyovers — live tuning")]
     [Tooltip("Master on/off for birds passing overhead. Only species with canFlyover are eligible.")]
     public bool enableFlyovers = false;
@@ -97,6 +103,7 @@ public class ItemSpawner : MonoBehaviour
             maxSize: itemMax * 2);
 
         // Continuous diffuse floor(s) — layered wind/insects, each crossfade-looped 2D.
+        AmbientBed windBed = null, cricketBed = null;
         if (biome != null)
         {
             if (biome.bedLayers != null && biome.bedLayers.Length > 0)
@@ -105,7 +112,12 @@ public class ItemSpawner : MonoBehaviour
                 {
                     if (layer == null || layer.clip == null) continue;
                     var go = new GameObject("AmbientBed_" + layer.clip.name);
-                    go.AddComponent<AmbientBed>().Init(layer.clip, layer.volume, 3f);
+                    var bed = go.AddComponent<AmbientBed>();
+                    bed.Init(layer.clip, layer.volume, 3f);
+                    // Grab the wind & insect beds so weather can swell one and silence the other.
+                    string n = layer.clip.name.ToLower();
+                    if (n.Contains("wind")) windBed = bed;
+                    else if (n.Contains("insect") || n.Contains("cricket") || n.Contains("grasshopper")) cricketBed = bed;
                 }
             }
             else if (biome.bedClip != null) // legacy single bed
@@ -127,6 +139,15 @@ public class ItemSpawner : MonoBehaviour
         // 2.7 spatial mix: forest reverb that follows the player.
         var reverbGo = new GameObject("ForestReverb");
         reverbGo.AddComponent<ForestReverb>().player = player != null ? player.transform : null;
+
+        // Dynamic weather: thunderstorm state machine that swells the wind, adds rain + thunder,
+        // hushes the crickets and birds. Toggle via enableWeather (this spawner's Inspector).
+        var weatherGo = new GameObject("WeatherSystem");
+        weather = weatherGo.AddComponent<WeatherController>();
+        weather.spawner = this;
+        weather.player = player != null ? player.transform : null;
+        weather.windBed = windBed;
+        weather.cricketBed = cricketBed;
 
         ManageItems(Time.realtimeSinceStartup);
     }
@@ -311,8 +332,19 @@ public class ItemSpawner : MonoBehaviour
         // forest has natural ebb and flow instead of a nonstop wall of sound.
         if (Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
         {
-            if (TrySpawnOne(cTime, newItemPos))
+            // Weather hush: as a storm builds, fewer and fewer new calls fire, so wildlife falls
+            // silent gradually. hush 0 = normal, 1 = (almost) nothing new spawns.
+            float hush = weather != null ? weather.birdHush : 0f;
+            if (hush <= 0f || Random.value > hush)
             {
+                if (TrySpawnOne(cTime, newItemPos))
+                {
+                    nextSpawnTime = Time.time + Random.Range(spawnIntervalMin, spawnIntervalMax);
+                }
+            }
+            else
+            {
+                // Skipped by weather — wait a beat before trying again so we don't busy-spin.
                 nextSpawnTime = Time.time + Random.Range(spawnIntervalMin, spawnIntervalMax);
             }
         }
