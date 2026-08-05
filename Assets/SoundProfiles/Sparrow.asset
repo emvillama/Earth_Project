@@ -18,6 +18,18 @@ MonoBehaviour:
   clips:
   - clip: {fileID: 8300000, guid: 5182176d784d6bc4a835b8e4f739b4b8, type: 3}
     weight: 1
+  - clip: {fileID: 8300000, guid: 104fecc9cc3b74f50b5036c305920e4c, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: 65558ba4a0499434ab25f2fa003d315f, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: 3ff9d16c4af99439184a7fedbe97edc4, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: 54cd93b31cea4267b1e229ac2b6480b4, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: f6cb7b00a0704c0593131c91898f22ea, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: 06cc52a3476f4b7392bcd857243aab78, type: 3}
+    weight: 1
   spawnWeight: 10
   maxConcurrent: 2
   minHeight: 2

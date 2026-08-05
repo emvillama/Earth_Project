@@ -27,6 +27,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 5b082432d06701cf715e3fbade2d13e0, type: 2}
   - {fileID: 11400000, guid: 09f5140b16381bd494979159276c5533, type: 2}
   - {fileID: 11400000, guid: ac805852cd923aa6fcc7ba52f8c6102c, type: 2}
+  - {fileID: 11400000, guid: 0cef835143a54985a41a61af1ac4d6da, type: 2}
+  - {fileID: 11400000, guid: 1d5e6aeb829340c0b0b36741d4e49f37, type: 2}
   bedLayers:
   - clip: {fileID: 8300000, guid: ff2699e29ec5b07bf2b9d697f2d8ab21, type: 3}
     volume: 0.1
