@@ -4,8 +4,8 @@ using UnityEngine;
 //
 // Flow (per design):
 //   Clear   — every ~clearCheckSeconds there's a `formChance` (10%) a storm starts forming.
-//   Forming — building for ~stageSeconds; then `formToStorm` (25%) it becomes a full storm,
-//             otherwise it dissipates back to Clear.
+//   Forming — light rain building for ~stageSeconds; then `formToStorm` (25%) it becomes a full
+//             storm, otherwise it dissipates back to Clear.
 //   Storm   — full storm for ~stageSeconds; then `stormContinue` (50%) it keeps going another
 //             stage, otherwise it starts Clearing.
 //   Clearing— easing off for ~stageSeconds; then `clearingRampUp` (10%) it flares back into a
@@ -14,10 +14,14 @@ using UnityEngine;
 //             after the birds; once both have returned, back to Clear.
 //
 // A single smoothed `intensity` (0..1) ramps toward each phase's target so everything grows and
-// fades gradually — wind swells first, then rain fills in, thunder gets more frequent and louder,
-// and birds fall silent as it builds. Drives the wind/cricket AmbientBeds, a 2D rain loop, and
-// thunder one-shots. Weather clips load from Resources/Weather (no Inspector wiring). Auto-created
-// by ItemSpawner; the on/off toggle lives on ItemSpawner (enableWeather) in the World Spawner tab.
+// fades gradually. It crossfades a gentle light-rain loop into a heavy downpour, swells the wind,
+// fires thunder (distant rumbles early, sharp cracks at peak) more often and louder as it builds,
+// and silences the birds. BIRD RULE: birds only sing in Clear, during the calm recovery, and very
+// faintly under light rain — any real rain or thunder shuts them up entirely.
+//
+// All clips load from Resources/Weather/<group> folders (RainHeavy, RainLight, ThunderDistant,
+// ThunderClose) and are picked at random when a group is called, so nothing repeats predictably.
+// No Inspector wiring. Auto-created by ItemSpawner; on/off is ItemSpawner.enableWeather.
 public class WeatherController : MonoBehaviour
 {
     [Header("Wiring (set by ItemSpawner)")]
@@ -51,19 +55,29 @@ public class WeatherController : MonoBehaviour
     [Header("Feel")]
     [Tooltip("Seconds for intensity to travel the full 0..1 — bigger = slower, more gradual.")]
     public float rampSeconds = 30f;
-    [Range(0f, 1f)] public float formingIntensity = 0.35f;
+    [Tooltip("Forming sits at light-rain level so a few birds still sing while it builds.")]
+    [Range(0f, 1f)] public float formingIntensity = 0.22f;
     [Range(0f, 1f)] public float clearingIntensity = 0.40f;
     [Tooltip("Wind bed gets up to (1 + this) louder at full storm.")]
     public float windBoost = 2.5f;
-    [Tooltip("Peak rain loop volume at full storm.")]
-    [Range(0f, 1f)] public float rainMaxVol = 0.6f;
     [Tooltip("How much of normal bird activity remains during the calm after (0 = none).")]
     [Range(0f, 1f)] public float calmBirdActivity = 0.4f;
 
+    [Header("Rain")]
+    [Tooltip("At/below this intensity it's 'light rain' — gentle loop, a few birds, no thunder.")]
+    [Range(0f, 1f)] public float lightRainCeil = 0.28f;
+    [Tooltip("Peak volume of the heavy downpour at full storm.")]
+    [Range(0f, 1f)] public float rainMaxVol = 0.6f;
+    [Tooltip("Peak volume of the gentle light-rain layer.")]
+    [Range(0f, 1f)] public float lightRainMaxVol = 0.4f;
+    [Tooltip("Bird hush under light rain (0 = full birds, 1 = silent). ~0.85 = only the occasional chirp.")]
+    [Range(0f, 1f)] public float lightRainBirdHush = 0.85f;
+
     [Header("Thunder")]
-    [Range(0f, 1f)] public float thunderStartsAt = 0.18f; // intensity below this: silent
-    public float thunderGapMax = 42f;                     // seconds between claps when just building
-    public float thunderGapMin = 8f;                      // seconds between claps at full storm
+    [Tooltip("Intensity below this: no thunder (kept above light-rain so drizzle stays thunderless).")]
+    [Range(0f, 1f)] public float thunderStartsAt = 0.30f;
+    public float thunderGapMax = 42f;                     // seconds between strikes when just building
+    public float thunderGapMin = 8f;                      // seconds between strikes at full storm
 
     [Header("Live (read-only)")]
     [SerializeField] private string phaseName = "Clear";
@@ -78,27 +92,23 @@ public class WeatherController : MonoBehaviour
     private float phaseTimer = 0f;
     private float CricketReturnAt => calmQuietSeconds + cricketDelayAfterBirds; // from calm start
 
-    private AudioSource rain, thunder;
-    private AudioClip rainClip;
-    private AudioClip[] thunderClips;      // 0 distant, 1 rumble, 2 clap
+    private AudioSource rainHeavy, rainLight, thunder;
+    private AudioClip[] rainHeavyClips, rainLightClips, thunderDistant, thunderClose;
     private float thunderTimer = 0f;
 
     void Start()
     {
-        rainClip = Resources.Load<AudioClip>("Weather/Rain_Forest");
-        thunderClips = new[]
-        {
-            Resources.Load<AudioClip>("Weather/Thunder_Distant"),
-            Resources.Load<AudioClip>("Weather/Thunder_Rumble"),
-            Resources.Load<AudioClip>("Weather/Thunder_Clap"),
-        };
+        rainHeavyClips = Resources.LoadAll<AudioClip>("Weather/RainHeavy");
+        rainLightClips = Resources.LoadAll<AudioClip>("Weather/RainLight");
+        thunderDistant = Resources.LoadAll<AudioClip>("Weather/ThunderDistant");
+        thunderClose   = Resources.LoadAll<AudioClip>("Weather/ThunderClose");
 
-        rain = NewSource("RainLoop", loop: true);
-        rain.clip = rainClip;
-        rain.volume = 0f;
-        if (rainClip != null) rain.Play();
-
-        thunder = NewSource("Thunder", loop: false);
+        rainHeavy = NewSource("RainHeavy", loop: true);
+        rainLight = NewSource("RainLight", loop: true);
+        thunder   = NewSource("Thunder", loop: false);
+        rainHeavy.volume = 0f;
+        rainLight.volume = 0f;
+        PickRain();               // seed both loops with a random clip and start them (silent)
     }
 
     private AudioSource NewSource(string name, bool loop)
@@ -122,7 +132,7 @@ public class WeatherController : MonoBehaviour
             return;
         }
 
-        if (debugStartStorm) { debugStartStorm = false; Enter(Phase.Storm); }
+        if (debugStartStorm) { debugStartStorm = false; PickRain(); Enter(Phase.Storm); }
 
         phaseTimer += dt;
         float target = 0f;
@@ -170,6 +180,9 @@ public class WeatherController : MonoBehaviour
 
     private void Enter(Phase p)
     {
+        // A brand-new weather event (Clear -> Forming) rolls fresh rain clips so no two storms
+        // sound the same. Re-entering Storm/Clearing keeps the current rain going.
+        if (p == Phase.Forming && phase == Phase.Clear) PickRain();
         phase = p;
         phaseTimer = 0f;
     }
@@ -198,18 +211,33 @@ public class WeatherController : MonoBehaviour
             cricketBed.volumeScale = Mathf.MoveTowards(cricketBed.volumeScale, 1f - suppress, dt * 0.7f);
         }
 
-        // Birds fall silent as the storm grows; return gradually through the calm.
-        birdHush = Mathf.Max(Mathf.Clamp01(intensity * 1.4f), calmHush);
-
-        // Rain lags the wind in a bit, then fills to full.
-        if (rain != null)
+        // BIRD RULE: silent under any real rain/thunder; only a few under light rain; recovery in calm.
+        if (phase == Phase.Calm)
         {
-            float rainVol = Mathf.Clamp01((intensity - 0.2f) / 0.8f) * rainMaxVol;
-            rain.volume = Mathf.MoveTowards(rain.volume, rainVol, dt * 0.5f);
+            birdHush = calmHush;
+        }
+        else if (intensity <= 0.02f)
+        {
+            birdHush = 0f;                          // clear skies — full birdsong
+        }
+        else if (intensity <= lightRainCeil)
+        {
+            birdHush = lightRainBirdHush;           // light rain — very occasional chirp
+        }
+        else
+        {
+            birdHush = 1f;                          // storm / real rain / thunder — none
         }
 
-        // Thunder: more frequent and louder as intensity rises; distant rumbles early, cracks late.
-        if (thunder != null && thunderClips != null)
+        // Rain: a gentle light layer leads, crossfading into the heavy downpour as it builds.
+        float heavyTarget = Mathf.Clamp01((intensity - lightRainCeil) / Mathf.Max(0.01f, 1f - lightRainCeil)) * rainMaxVol;
+        float lightTarget = Mathf.Clamp01(intensity / Mathf.Max(0.01f, lightRainCeil)) * lightRainMaxVol
+                            * (1f - Mathf.Clamp01((intensity - lightRainCeil) / 0.4f));
+        if (rainHeavy != null) rainHeavy.volume = Mathf.MoveTowards(rainHeavy.volume, heavyTarget, dt * 0.5f);
+        if (rainLight != null) rainLight.volume = Mathf.MoveTowards(rainLight.volume, lightTarget, dt * 0.5f);
+
+        // Thunder: more frequent and louder as intensity rises; distant rumbles early, cracks at peak.
+        if (thunder != null)
         {
             if (intensity < thunderStartsAt)
             {
@@ -235,16 +263,34 @@ public class WeatherController : MonoBehaviour
         }
     }
 
+    private void PickRain()
+    {
+        AssignLoop(rainHeavy, rainHeavyClips);
+        AssignLoop(rainLight, rainLightClips);
+    }
+
+    private void AssignLoop(AudioSource src, AudioClip[] group)
+    {
+        if (src == null) return;
+        AudioClip c = RandomClip(group);
+        if (c == null) return;
+        src.clip = c;
+        src.Play();
+        if (c.length > 1f) src.time = Random.Range(0f, c.length); // random offset so layers don't phase
+    }
+
     private AudioClip PickThunder()
     {
-        if (thunderClips == null || thunderClips.Length == 0) return null;
-        // Early/low intensity: distant + rumble. High intensity: rumble + clap.
-        int idx;
-        if (intensity < 0.55f) idx = Random.value < 0.6f ? 0 : 1;
-        else idx = Random.value < 0.5f ? 1 : 2;
-        AudioClip c = thunderClips[Mathf.Clamp(idx, 0, thunderClips.Length - 1)];
-        if (c == null) // fall back to any loaded clip
-            foreach (var t in thunderClips) if (t != null) return t;
-        return c;
+        // Low intensity: mostly distant rumbles. High: mostly sharp close cracks. Crossover for variety.
+        AudioClip[] grp = (intensity < 0.55f)
+            ? (Random.value < 0.75f ? thunderDistant : thunderClose)
+            : (Random.value < 0.65f ? thunderClose : thunderDistant);
+        return RandomClip(grp) ?? RandomClip(thunderDistant) ?? RandomClip(thunderClose);
+    }
+
+    private AudioClip RandomClip(AudioClip[] a)
+    {
+        if (a == null || a.Length == 0) return null;
+        return a[Random.Range(0, a.Length)];
     }
 }
