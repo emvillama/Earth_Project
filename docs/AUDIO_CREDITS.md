@@ -23,3 +23,9 @@ If this project/concept is ever sold, the buyer must be warned about this collec
 - WhiteTailedDeer.wav — freesound #58128 by juskiddink — CC-BY 4.0 — https://freesound.org/s/58128
 - WhiteTailedDeer_bark.wav — freesound #696777 by ferventtorpor — CC0 — https://freesound.org/s/696777
 - GraySquirrel.wav — freesound #852386 by TheKingOfGeeks360 — CC0 — https://freesound.org/s/852386
+
+## Upgraded original species (xeno-canto, CC-BY-NC-SA, personal use)
+- BlueJay.wav — XC691163 by Christopher McPherson — https://xeno-canto.org/691163
+- Junco.wav — XC714834 by Paul Marvin — https://xeno-canto.org/714834
+- Sparrow.wav (Song Sparrow) — XC1049227 by Daniel Parker — https://xeno-canto.org/1049227
+- woodpecker.wav (Downy Woodpecker) — XC676924 by David A. Brinkman — https://xeno-canto.org/676924
