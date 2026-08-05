@@ -18,3 +18,8 @@ If this project/concept is ever sold, the buyer must be warned about this collec
 | WhiteBreastedNuthatch | XC942746 | Tero Linjama | https://creativecommons.org/licenses/by-nc-sa/4.0/ | https://xeno-canto.org/942746 |
 | Wind_ThroughTrees | freesound 444919 | nomadape | freesound (personal-use) | https://freesound.org/s/444919 |
 | Insects_Grasshopper | freesound 401856 | straget | freesound (personal-use) | https://freesound.org/s/401856 |
+
+## Mammals (freesound)
+- WhiteTailedDeer.wav — freesound #58128 by juskiddink — CC-BY 4.0 — https://freesound.org/s/58128
+- WhiteTailedDeer_bark.wav — freesound #696777 by ferventtorpor — CC0 — https://freesound.org/s/696777
+- GraySquirrel.wav — freesound #852386 by TheKingOfGeeks360 — CC0 — https://freesound.org/s/852386
