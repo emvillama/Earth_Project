@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ac04169a118b38914912f5d2ebd4f29, type: 3}
+  m_Name: RedTailedHawk
+  m_EditorClassIdentifier:
+  displayName: Red-tailed Hawk
+  activePeriods: 7
+  enabled: 1
+  layer: 1
+  clips:
+  - clip: {fileID: 8300000, guid: 4202ecb248771b4e4233a2c72c4c75da, type: 3}
+    weight: 1
+  spawnWeight: 2
+  maxConcurrent: 1
+  minHeight: 20
+  maxHeight: 40
+  minDistance: 8
+  audibleRadius: 140
+  lifetimeMin: 15
+  lifetimeMax: 30
+  callLengthMin: 2
+  callLengthMax: 4
+  gapMin: 20
+  gapMax: 45
+  neighborBias: 0
+  neighborRadius: 25
+  pitchJitter: 0.05
+  gainJitter: 0.1
+  canFlyover: 1
+  fixedStart: 1
+  fadeIn: 0.2
+  fadeOut: 0.4
+  waryRadius: 0

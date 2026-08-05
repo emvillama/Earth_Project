@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ac04169a118b38914912f5d2ebd4f29, type: 3}
+  m_Name: WhiteTailedDeer
+  m_EditorClassIdentifier:
+  displayName: White-tailed Deer
+  activePeriods: 7
+  enabled: 1
+  layer: 1
+  clips:
+  - clip: {fileID: 8300000, guid: 98bfc306062a04df3802d48b560b900c, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: 45f14c2c1aa1e4841868ebfe4e5ebf21, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: f9b397cdf568445fdb7e8935d50bcaef, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: ba6ea24961ef344529a680ed51fec586, type: 3}
+    weight: 1
+  spawnWeight: 2
+  maxConcurrent: 1
+  minHeight: 0
+  maxHeight: 1
+  minDistance: 4
+  audibleRadius: 50
+  lifetimeMin: 15
+  lifetimeMax: 30
+  callLengthMin: 1
+  callLengthMax: 3
+  gapMin: 20
+  gapMax: 45
+  neighborBias: 0
+  neighborRadius: 25
+  pitchJitter: 0.05
+  gainJitter: 0.12
+  canFlyover: 0
+  fixedStart: 1
+  fadeIn: 0.2
+  fadeOut: 0.6
+  waryRadius: 18

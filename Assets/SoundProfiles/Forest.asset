@@ -29,6 +29,13 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ac805852cd923aa6fcc7ba52f8c6102c, type: 2}
   - {fileID: 11400000, guid: 0cef835143a54985a41a61af1ac4d6da, type: 2}
   - {fileID: 11400000, guid: 1d5e6aeb829340c0b0b36741d4e49f37, type: 2}
+  - {fileID: 11400000, guid: 8cef3e91853b44c1b5bab0f414cea8da, type: 2}
+  - {fileID: 11400000, guid: 4500e8932b954c1d9ae64cd8827ec7e6, type: 2}
+  - {fileID: 11400000, guid: 98f1c6d33adf46958ea72e6f0b3d8b40, type: 2}
+  - {fileID: 11400000, guid: edd9914c4a0444acaad6ce7aecb8fede, type: 2}
+  - {fileID: 11400000, guid: 6a46386801714fdbbae108acc227206b, type: 2}
+  - {fileID: 11400000, guid: f54bbcf9a0d7425ea3f3b138402d49e3, type: 2}
+  - {fileID: 11400000, guid: bba30eb0fae04d38a53d99aa231ef0dc, type: 2}
   bedLayers:
   - clip: {fileID: 8300000, guid: ff2699e29ec5b07bf2b9d697f2d8ab21, type: 3}
     volume: 0.1

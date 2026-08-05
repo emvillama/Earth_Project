@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ac04169a118b38914912f5d2ebd4f29, type: 3}
+  m_Name: GreatHornedOwl
+  m_EditorClassIdentifier:
+  displayName: Great Horned Owl
+  activePeriods: 8
+  enabled: 1
+  layer: 1
+  clips:
+  - clip: {fileID: 8300000, guid: d3b44533e6be909ac6b6bd5daa310b93, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: a70905ba8542e4dd1a6dad50dc3942c8, type: 3}
+    weight: 1
+  - clip: {fileID: 8300000, guid: 71ab3852723874241a483216a224a94f, type: 3}
+    weight: 1
+  spawnWeight: 4
+  maxConcurrent: 1
+  minHeight: 5
+  maxHeight: 15
+  minDistance: 5
+  audibleRadius: 130
+  lifetimeMin: 30
+  lifetimeMax: 60
+  callLengthMin: 3
+  callLengthMax: 7
+  gapMin: 12
+  gapMax: 30
+  neighborBias: 0
+  neighborRadius: 25
+  pitchJitter: 0.04
+  gainJitter: 0.1
+  canFlyover: 0
+  fixedStart: 1
+  fadeIn: 0.3
+  fadeOut: 0.5
+  waryRadius: 0
