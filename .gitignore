@@ -27,3 +27,5 @@ ignore.conf
 
 # Raw audio downloads (staging; cherry-pick + clean into Assets on use)
 _incoming/
+
+.DS_Store

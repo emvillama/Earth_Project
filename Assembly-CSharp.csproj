@@ -43,6 +43,7 @@
     <UnityVersion>6000.5.5f1</UnityVersion>
   </PropertyGroup>
   <ItemGroup>
+    <Analyzer Include="/Users/harrisondebiasse/.vscode/extensions/visualstudiotoolsforunity.vstuc-1.2.2/Analyzers/Microsoft.Unity.Analyzers.dll" />
     <Analyzer Include="/Applications/Unity/Hub/Editor/6000.5.5f1/Unity.app/Contents/Resources/BuildPipeline/Unity.SourceGenerators/Unity.SourceGenerators.dll" />
     <Analyzer Include="/Applications/Unity/Hub/Editor/6000.5.5f1/Unity.app/Contents/Resources/BuildPipeline/Unity.SourceGenerators/Unity.Properties.SourceGenerator.dll" />
     <Analyzer Include="/Applications/Unity/Hub/Editor/6000.5.5f1/Unity.app/Contents/Resources/BuildPipeline/Unity.SourceGenerators/Unity.UIToolkit.SourceGenerator.dll" />
@@ -52,23 +53,29 @@
     <Analyzer Include="/Applications/Unity/Hub/Editor/6000.5.5f1/Unity.app/Contents/Resources/Scripting/BCLExtensions/TargetingPacks/netstandard2.1/analyzers/dotnet/roslyn4.0/cs/System.Text.Json.SourceGeneration.dll" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioReverbProbe.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioAcousticMesh.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioMaterialMapper.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioSource.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioMaterialMap.cs" />
-    <Compile Include="Assets/Code/GeneratePlane.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioMaterialMapperUpdater.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioRoomManager.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudio.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioRoom.cs" />
+    <Compile Include="Assets/Code/IInputSource.cs" />
+    <Compile Include="Assets/Code/SoundProfile.cs" />
+    <Compile Include="Assets/Code/ItemSpawner.cs" />
+    <Compile Include="Assets/Code/SpawnConfig.cs" />
+    <Compile Include="Assets/Code/AudioFactory.cs" />
+    <Compile Include="Assets/Code/VoiceManager.cs" />
+    <Compile Include="Assets/Code/BiomeProfileSet.cs" />
+    <Compile Include="Assets/Code/WeatherController.cs" />
+    <Compile Include="Assets/Code/RiverSystem.cs" />
+    <Compile Include="Assets/Code/KeyboardMouseInputSource.cs" />
+    <Compile Include="Assets/Code/PlayerFootsteps.cs" />
+    <Compile Include="Assets/Code/ForestReverb.cs" />
     <Compile Include="Assets/Code/ItemAudioManager.cs" />
-    <Compile Include="Assets/ResonanceAudio/Scripts/ResonanceAudioListener.cs" />
     <Compile Include="Assets/Code/Cubie Code.cs" />
+    <Compile Include="Assets/Code/AmbientBed.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Assets/ResonanceAudio/Plugins/x86_64/audiopluginresonanceaudio.dll" />
-    <None Include="Assets/ResonanceAudio/Shaders/ResonanceAudioSurfaceMaterial.shader" />
+    <None Include="Assets/Sound Library/Environments/Forest/Insects/_README.txt" />
+    <None Include="Assets/Sound Library/Environments/Forest/Birds/_README.txt" />
+    <None Include="Assets/Sound Library/Environments/Forest/RareEvents/_README.txt" />
+    <None Include="Assets/Sound Library/Environments/Forest/Mammals/_README.txt" />
+    <None Include="Assets/Sound Library/Environments/Forest/AmbientBeds/_README.txt" />
+    <None Include="Assets/Sound Library/Environments/Forest/Weather/_README.txt" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="UnityEngine">
@@ -1259,24 +1266,16 @@
       <HintPath>Library/ScriptAssemblies/Unity.VisualScripting.State.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Meta.XR.Audio.Editor">
-      <HintPath>Library/ScriptAssemblies/Meta.XR.Audio.Editor.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="Meta.XR.Audio">
-      <HintPath>Library/ScriptAssemblies/Meta.XR.Audio.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.VisualScripting.SettingsProvider.Editor">
       <HintPath>Library/ScriptAssemblies/Unity.VisualScripting.SettingsProvider.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Unity.Rider.Editor">
-      <HintPath>Library/ScriptAssemblies/Unity.Rider.Editor.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection">
       <HintPath>Library/ScriptAssemblies/Unity.TestTools.CodeCoverage.Editor.OpenCover.Mono.Reflection.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Unity.Rider.Editor">
+      <HintPath>Library/ScriptAssemblies/Unity.Rider.Editor.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Unity.Performance.Profile-Analyzer.Editor">
