@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: AmericanCrow
   m_EditorClassIdentifier:
   displayName: AmericanCrow
+  activePeriods: 7
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: 6ff3f910455eb8e05d504e97517e91b9, type: 3}

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: TuftedTitmouse
   m_EditorClassIdentifier: 
   displayName: TuftedTitmouse
+  activePeriods: 7
   enabled: 0
   layer: 1
   clips:

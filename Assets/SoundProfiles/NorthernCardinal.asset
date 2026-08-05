@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: NorthernCardinal
   m_EditorClassIdentifier: 
   displayName: NorthernCardinal
+  activePeriods: 7
   enabled: 0
   layer: 1
   clips:

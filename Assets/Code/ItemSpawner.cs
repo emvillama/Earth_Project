@@ -36,6 +36,7 @@ public class ItemSpawner : MonoBehaviour
              "Lower the timing values on the WeatherSystem object to cycle storms fast.")]
     public bool enableWeather = true;
     private WeatherController weather;
+    private PeriodController period;
 
     [Header("Spawn density — per-period budget")]
     [Tooltip("Max NEW sounds allowed to START within each rolling window — the main density dial. " +
@@ -158,6 +159,12 @@ public class ItemSpawner : MonoBehaviour
         weather.windBed = windBed;
         weather.cricketBed = cricketBed;
 
+        // Time of day: user-selectable period (dev-toggle for now) that gates which species call,
+        // how busy the forest is, and the insect-bed level. Weather layers on top of it.
+        var periodGo = new GameObject("PeriodSystem");
+        period = periodGo.AddComponent<PeriodController>();
+        period.cricketBed = cricketBed;
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
@@ -212,7 +219,7 @@ public class ItemSpawner : MonoBehaviour
         float total = 0f;
         foreach (var p in biome.profiles)
         {
-            if (p != null && p.enabled && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent)
+            if (p != null && p.enabled && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent && IsActiveInPeriod(p))
             {
                 total += p.spawnWeight;
             }
@@ -225,7 +232,7 @@ public class ItemSpawner : MonoBehaviour
         float cum = 0f;
         foreach (var p in biome.profiles)
         {
-            if (p != null && p.enabled && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent)
+            if (p != null && p.enabled && p.layer != SoundLayer.Bed && CurrentCount(p) < p.maxConcurrent && IsActiveInPeriod(p))
             {
                 cum += p.spawnWeight;
                 if (r < cum)
@@ -240,6 +247,14 @@ public class ItemSpawner : MonoBehaviour
     private int CurrentCount(SoundProfile p)
     {
         return activeCounts.TryGetValue(p, out int c) ? c : 0;
+    }
+
+    // A species may call only in its assigned periods. None/unset = active in every period so
+    // profiles authored before the day/night system keep spawning as before.
+    private bool IsActiveInPeriod(SoundProfile p)
+    {
+        if (period == null || p.activePeriods == DayPeriodMask.None) return true;
+        return (p.activePeriods & period.CurrentMask) != 0;
     }
 
     private void ChangeCount(SoundProfile p, int delta)
@@ -344,7 +359,9 @@ public class ItemSpawner : MonoBehaviour
         {
             recentSpawns.Dequeue();
         }
-        int budget = Mathf.Max(1, spawnsPerPeriod);
+        // Scale the budget by the time of day — a busy dawn chorus down to a sparse night.
+        float periodMul = period != null ? period.SpawnMultiplier : 1f;
+        int budget = Mathf.Max(1, Mathf.RoundToInt(spawnsPerPeriod * periodMul));
         if (recentSpawns.Count < budget && Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
         {
             // Weather hush: as a storm builds, fewer and fewer new calls fire, so wildlife falls

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: AmericanRobin
   m_EditorClassIdentifier: 
   displayName: AmericanRobin
+  activePeriods: 7
   enabled: 0
   layer: 1
   clips:

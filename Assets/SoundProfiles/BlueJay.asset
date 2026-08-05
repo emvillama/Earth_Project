@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: BlueJay
   m_EditorClassIdentifier:
   displayName: BlueJay
+  activePeriods: 7
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: c3b8ba75bc9babe4ca10ad8f4ab71217, type: 3}

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: WoodThrush
   m_EditorClassIdentifier: 
   displayName: WoodThrush
+  activePeriods: 7
   enabled: 0
   layer: 1
   clips:

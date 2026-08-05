@@ -14,6 +14,10 @@ public class SoundProfile : ScriptableObject
     public bool enabled = true;
     public SoundLayer layer = SoundLayer.Event;
 
+    [Tooltip("Which times of day this species may call in. None/unset = all periods (back-compat). " +
+             "e.g. owls = Night, songbirds = Day (Dawn|Midday|Dusk).")]
+    public DayPeriodMask activePeriods = DayPeriodMask.All;
+
     [Header("Clips")]
     [Tooltip("Clip variations for this species; internal weights choose between them per play.")]
     public WeightedAudioClip[] clips;

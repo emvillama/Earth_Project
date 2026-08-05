@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Woodpecker
   m_EditorClassIdentifier: 
   displayName: Woodpecker
+  activePeriods: 7
   enabled: 0
   layer: 1
   clips:
