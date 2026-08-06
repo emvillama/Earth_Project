@@ -54,17 +54,24 @@ public class RiverSystem : MonoBehaviour
     [Tooltip("Seconds an emitter fades out as you move past it — crossfades with the next so the " +
              "river never hard-cuts and restarts.")]
     public float fadeOut = 2.5f;
+    [Tooltip("Seconds each emitter overlaps ITSELF at the loop point — two copies crossfaded on the " +
+             "audio clock so the water never seams/cuts when the clip loops (same trick as the beds).")]
+    public float loopCrossfade = 2.5f;
 
     public AudioClip waterClip;
     public Transform player;
 
     private struct RNode { public Vector3 pos; public float headingRad; public float width; }
-    private class Em { public AudioSource src; public float target; public bool removing; }
+    // Each emitter is two copies of the clip (a, b) crossfaded at the loop point on the dsp clock so
+    // the water loops seamlessly. `vol` is the outer level (width × segment move-fade); each copy's
+    // final volume is vol × its loop envelope.
+    private class Em { public AudioSource a, b; public double startA, startB; public float vol; public float target; public bool removing; }
 
     private readonly Dictionary<int, RNode> nodes = new Dictionary<int, RNode>();
     private readonly Dictionary<int, Em> emitters = new Dictionary<int, Em>();
-    private readonly Stack<AudioSource> pool = new Stack<AudioSource>();
+    private readonly Stack<Em> pool = new Stack<Em>();
     private readonly List<int> scratch = new List<int>();
+    private double clipDur; // seconds, from waterClip
 
     private enum State { None, Active, Dormant }
     private State state = State.None;
@@ -125,22 +132,25 @@ public class RiverSystem : MonoBehaviour
 
     void Update()
     {
-        // Per-frame crossfade: each emitter eases toward its target volume (fadeIn rate when rising,
-        // fadeOut when falling). Emitters the player has moved past fade to zero and are recycled
-        // only once silent — so as one segment fades out the next fades in and the river never
-        // hard-cuts and restarts.
-        if (state == State.Active)
+        // Per-frame: keep each emitter's two copies crossfading at the loop point (seamless loop),
+        // ease its outer volume toward target (segment-to-segment move crossfade), and recycle the
+        // emitters the player has left once they're silent — so the river never hard-cuts/restarts.
+        if (state == State.Active && clipDur > 0.0)
         {
+            double now = AudioSettings.dspTime;
             scratch.Clear();
             foreach (var kv in emitters)
             {
                 Em e = kv.Value;
-                float secs = e.target > e.src.volume ? fadeIn : fadeOut;
-                e.src.volume = Mathf.MoveTowards(e.src.volume, e.target,
-                                                 Time.deltaTime * baseVolume / Mathf.Max(0.05f, secs));
-                if (e.removing && e.src.volume <= 0.005f) scratch.Add(kv.Key);
+                if (now >= e.startA + clipDur) { e.startA = e.startB + clipDur - loopCrossfade; e.a.PlayScheduled(e.startA); }
+                if (now >= e.startB + clipDur) { e.startB = e.startA + clipDur - loopCrossfade; e.b.PlayScheduled(e.startB); }
+                float secs = e.target > e.vol ? fadeIn : fadeOut;
+                e.vol = Mathf.MoveTowards(e.vol, e.target, Time.deltaTime * baseVolume / Mathf.Max(0.05f, secs));
+                e.a.volume = e.vol * LoopEnv(now, e.startA);
+                e.b.volume = e.vol * LoopEnv(now, e.startB);
+                if (e.removing && e.vol <= 0.005f) scratch.Add(kv.Key);
             }
-            foreach (int k in scratch) { Recycle(emitters[k].src); emitters.Remove(k); }
+            foreach (int k in scratch) { Recycle(emitters[k]); emitters.Remove(k); }
         }
 
         if (player == null || waterClip == null || !riverActive)
@@ -178,6 +188,8 @@ public class RiverSystem : MonoBehaviour
 
     private void ManageEmitters()
     {
+        if (clipDur <= 0.0 && waterClip != null) clipDur = (double)waterClip.samples / waterClip.frequency;
+
         int span = Mathf.CeilToInt((baseRadius + segmentLength) / segmentLength) + 1;
         int lo = Mathf.Max(nearIndex - span, endLow);
         int hi = Mathf.Min(nearIndex + span, endHigh);
@@ -188,19 +200,21 @@ public class RiverSystem : MonoBehaviour
             float vol = baseVolume * nd.width;
             if (emitters.TryGetValue(k, out var e))
             {
-                e.src.maxDistance = radius;
+                e.a.maxDistance = radius;
+                e.b.maxDistance = radius;
                 e.target = vol;
                 e.removing = false; // back in the window before it faded out → let it rise again
             }
             else
             {
-                AudioSource src = GetEmitter();
-                src.transform.position = nd.pos;
-                src.maxDistance = radius;
-                src.volume = 0f;
-                src.Play();
-                if (waterClip.length > 1f) src.time = Random.Range(0f, waterClip.length);
-                emitters[k] = new Em { src = src, target = vol, removing = false };
+                Em ne = GetEmitter();
+                ne.a.transform.position = nd.pos;
+                ne.b.transform.position = nd.pos;
+                ne.a.maxDistance = radius;
+                ne.b.maxDistance = radius;
+                ne.target = vol;
+                ScheduleEmitter(ne);
+                emitters[k] = ne;
             }
         }
         // Emitters outside the window fade out (recycled by Update once silent) rather than hard-stop.
@@ -242,7 +256,7 @@ public class RiverSystem : MonoBehaviour
     private void GoDormant()
     {
         dormantAnchor = Node(Mathf.Clamp(nearIndex, endLow, endHigh)).pos;
-        foreach (var kv in emitters) Recycle(kv.Value.src);
+        foreach (var kv in emitters) Recycle(kv.Value);
         emitters.Clear();
         nodes.Clear(); // free memory; seed kept so we regenerate the same river on return
         state = State.Dormant;
@@ -257,32 +271,66 @@ public class RiverSystem : MonoBehaviour
 
     private void ForceNone()
     {
-        foreach (var kv in emitters) Recycle(kv.Value.src);
+        foreach (var kv in emitters) Recycle(kv.Value);
         emitters.Clear();
         nodes.Clear();
         state = State.None;
     }
 
-    private AudioSource GetEmitter()
+    private Em GetEmitter()
     {
-        AudioSource s = pool.Count > 0 ? pool.Pop() : NewEmitter();
-        s.gameObject.SetActive(true);
-        return s;
+        Em e = pool.Count > 0 ? pool.Pop() : NewEmitter();
+        e.a.gameObject.SetActive(true);
+        e.b.gameObject.SetActive(true);
+        e.removing = false;
+        e.vol = 0f;
+        return e;
     }
 
-    private AudioSource NewEmitter()
+    // Two independent 3D sources (each on its own GameObject so each gets its own Steam Audio
+    // spatializer). They alternate-crossfade to loop the clip seamlessly.
+    private Em NewEmitter()
     {
-        var go = new GameObject("RiverEmitter");
-        go.transform.SetParent(transform);
-        var s = AudioFactory.Add3D(go, loop: true, minDistance: 4f);
-        s.clip = waterClip;
-        return s;
+        var goA = new GameObject("RiverEmitterA");
+        var goB = new GameObject("RiverEmitterB");
+        goA.transform.SetParent(transform);
+        goB.transform.SetParent(transform);
+        var a = AudioFactory.Add3D(goA, loop: false, minDistance: 4f); a.clip = waterClip; a.volume = 0f;
+        var b = AudioFactory.Add3D(goB, loop: false, minDistance: 4f); b.clip = waterClip; b.volume = 0f;
+        return new Em { a = a, b = b };
     }
 
-    private void Recycle(AudioSource s)
+    // Start an emitter's two copies so one begins as the other's tail fades (seamless loop). A small
+    // random stagger desyncs neighbouring emitters so identical loops don't phase against each other.
+    private void ScheduleEmitter(Em e)
     {
-        s.Stop();
-        s.gameObject.SetActive(false);
-        pool.Push(s);
+        if (clipDur < loopCrossfade * 2.0) loopCrossfade = (float)(clipDur * 0.25);
+        double t0 = AudioSettings.dspTime + 0.1 + Random.Range(0f, 0.3f);
+        e.startA = t0;
+        e.a.PlayScheduled(t0);
+        e.startB = t0 + clipDur - loopCrossfade;
+        e.b.PlayScheduled(e.startB);
+    }
+
+    // Equal-power loop envelope for one copy: fade in over loopCrossfade, hold, fade out over the
+    // last loopCrossfade. sqrt keeps constant power through the overlap (no dip at the seam).
+    private float LoopEnv(double now, double start)
+    {
+        double t = now - start;
+        if (t < 0.0 || t > clipDur) return 0f;
+        float k;
+        if (t < loopCrossfade) k = (float)(t / loopCrossfade);
+        else if (t > clipDur - loopCrossfade) k = (float)((clipDur - t) / loopCrossfade);
+        else k = 1f;
+        return Mathf.Sqrt(Mathf.Clamp01(k));
+    }
+
+    private void Recycle(Em e)
+    {
+        e.a.Stop();
+        e.b.Stop();
+        e.a.gameObject.SetActive(false);
+        e.b.gameObject.SetActive(false);
+        pool.Push(e);
     }
 }

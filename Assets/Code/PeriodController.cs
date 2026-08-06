@@ -34,8 +34,8 @@ public class PeriodController : MonoBehaviour
     [Header("Per-period feel — order: Dawn, Midday, Dusk, Night")]
     [Tooltip("Spawn-budget multiplier (dawn chorus busiest, night sparse).")]
     public float[] spawnMultiplier = { 1.3f, 1.0f, 0.85f, 0.4f };
-    [Tooltip("Insect/cricket bed base volume (quiet by day, loud at night).")]
-    public float[] insectVolume = { 0.08f, 0.04f, 0.20f, 0.32f };
+    [Tooltip("Insect/cricket bed base volume per period. Flat 0.1 for now (Harry); raise night/dusk later for day/night character.")]
+    public float[] insectVolume = { 0.1f, 0.1f, 0.1f, 0.1f };
     [Tooltip("Seconds to ease the insect bed when the period changes.")]
     public float blendSeconds = 4f;
 
