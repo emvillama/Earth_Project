@@ -51,6 +51,16 @@ public class ItemAudioManager : MonoBehaviour
     private Vector3 flyTo = Vector3.zero;
     private float flySpeed = 0f;
 
+    // Occlusion (3.3b-ii): a trunk between this source and the listener muffles it (low-pass) and
+    // ducks it a little. The raycast is throttled; cutoff/gain ease so it opens and closes smoothly
+    // as you move — no popping. Trunks are the invisible colliders placed by AcousticTrees.
+    private AudioLowPassFilter lowpass;
+    private float occTick = 0f;
+    private float occGain = 1f, occGainTarget = 1f;
+    private float occCut = OpenCutoff, occCutTarget = OpenCutoff;
+    private const float OpenCutoff = 22000f;
+    private static readonly RaycastHit[] occHits = new RaycastHit[8];
+
     void Awake()
     {
         audioSource = GetComponent<AudioSource>();
@@ -63,6 +73,9 @@ public class ItemAudioManager : MonoBehaviour
             audioSource.spatialBlend = 1f;   // full 3D: distance drives loudness
             audioSource.spatialize = true;   // HRTF binaural via the Steam Audio spatializer (3.3)
             AudioFactory.EnableSteamAudio(audioSource); // 3.3b-i: air absorption + physics distance
+            lowpass = GetComponent<AudioLowPassFilter>();
+            if (lowpass == null) lowpass = gameObject.AddComponent<AudioLowPassFilter>();
+            lowpass.cutoffFrequency = OpenCutoff; // 3.3b-ii: driven by tree occlusion
         }
     }
 
@@ -215,9 +228,19 @@ public class ItemAudioManager : MonoBehaviour
             fade = Mathf.MoveTowards(fade, fadeTarget, step);
         }
 
+        // Occlusion: muffle + duck when a trunk sits between this source and the listener.
+        if (lowpass != null && listener != null)
+        {
+            occTick += Time.deltaTime;
+            if (occTick >= 0.15f) { occTick = 0f; UpdateOcclusion(); }
+            occCut = Mathf.Lerp(occCut, occCutTarget, Time.deltaTime * 6f);
+            occGain = Mathf.Lerp(occGain, occGainTarget, Time.deltaTime * 6f);
+            lowpass.cutoffFrequency = occCut;
+        }
+
         if (audioSource.isPlaying)
         {
-            audioSource.volume = fade * callGain;
+            audioSource.volume = fade * callGain * occGain;
         }
 
         if (fade <= 0.0001f)
@@ -232,6 +255,32 @@ public class ItemAudioManager : MonoBehaviour
             {
                 audioSource.Pause();
             }
+        }
+    }
+
+    // Raycast source -> listener against the acoustic-tree trunks; the more trunks in the way, the
+    // lower the low-pass cutoff (muffled) and the more it ducks. No trunks = fully open.
+    private void UpdateOcclusion()
+    {
+        int mask = AcousticTrees.TreeLayerMask;
+        Vector3 a = transform.position;
+        Vector3 dir = listener.position - a;
+        float dist = dir.magnitude;
+        if (mask == 0 || dist < 0.75f)
+        {
+            occCutTarget = OpenCutoff; occGainTarget = 1f;
+            return;
+        }
+        int hits = Physics.RaycastNonAlloc(a, dir / dist, occHits, dist, mask, QueryTriggerInteraction.Collide);
+        if (hits <= 0)
+        {
+            occCutTarget = OpenCutoff; occGainTarget = 1f;
+        }
+        else
+        {
+            float b = Mathf.Clamp(hits, 1, 4) / 4f; // more trunks between = more muffled
+            occCutTarget = Mathf.Lerp(OpenCutoff, 550f, b);
+            occGainTarget = Mathf.Lerp(1f, 0.5f, b);
         }
     }
 

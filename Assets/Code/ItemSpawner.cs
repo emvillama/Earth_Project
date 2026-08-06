@@ -182,6 +182,11 @@ public class ItemSpawner : MonoBehaviour
         period = periodGo.AddComponent<PeriodController>();
         period.cricketBed = cricketBed;
 
+        // 3.3b-ii acoustic geometry: invisible trunk colliders so sound can be occluded by "trees"
+        // (raycast in ItemAudioManager). No visual world, so this is the only thing to block against.
+        var treesGo = new GameObject("AcousticTrees");
+        treesGo.AddComponent<AcousticTrees>().player = player != null ? player.transform : null;
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
