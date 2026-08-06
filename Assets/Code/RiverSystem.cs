@@ -51,12 +51,15 @@ public class RiverSystem : MonoBehaviour
     public float groundY = 9f;
     [Tooltip("Seconds each emitter fades in (so the river is heard gradually, not instantly).")]
     public float fadeIn = 2.5f;
+    [Tooltip("Seconds an emitter fades out as you move past it — crossfades with the next so the " +
+             "river never hard-cuts and restarts.")]
+    public float fadeOut = 2.5f;
 
     public AudioClip waterClip;
     public Transform player;
 
     private struct RNode { public Vector3 pos; public float headingRad; public float width; }
-    private class Em { public AudioSource src; public float target; public float fadeStart; }
+    private class Em { public AudioSource src; public float target; public bool removing; }
 
     private readonly Dictionary<int, RNode> nodes = new Dictionary<int, RNode>();
     private readonly Dictionary<int, Em> emitters = new Dictionary<int, Em>();
@@ -122,15 +125,22 @@ public class RiverSystem : MonoBehaviour
 
     void Update()
     {
-        // Per-frame gradual fade-in on active emitters.
+        // Per-frame crossfade: each emitter eases toward its target volume (fadeIn rate when rising,
+        // fadeOut when falling). Emitters the player has moved past fade to zero and are recycled
+        // only once silent — so as one segment fades out the next fades in and the river never
+        // hard-cuts and restarts.
         if (state == State.Active)
         {
+            scratch.Clear();
             foreach (var kv in emitters)
             {
                 Em e = kv.Value;
-                float f = Mathf.Clamp01((Time.time - e.fadeStart) / Mathf.Max(0.01f, fadeIn));
-                e.src.volume = e.target * f;
+                float secs = e.target > e.src.volume ? fadeIn : fadeOut;
+                e.src.volume = Mathf.MoveTowards(e.src.volume, e.target,
+                                                 Time.deltaTime * baseVolume / Mathf.Max(0.05f, secs));
+                if (e.removing && e.src.volume <= 0.005f) scratch.Add(kv.Key);
             }
+            foreach (int k in scratch) { Recycle(emitters[k].src); emitters.Remove(k); }
         }
 
         if (player == null || waterClip == null || !riverActive)
@@ -180,6 +190,7 @@ public class RiverSystem : MonoBehaviour
             {
                 e.src.maxDistance = radius;
                 e.target = vol;
+                e.removing = false; // back in the window before it faded out → let it rise again
             }
             else
             {
@@ -189,12 +200,14 @@ public class RiverSystem : MonoBehaviour
                 src.volume = 0f;
                 src.Play();
                 if (waterClip.length > 1f) src.time = Random.Range(0f, waterClip.length);
-                emitters[k] = new Em { src = src, target = vol, fadeStart = Time.time };
+                emitters[k] = new Em { src = src, target = vol, removing = false };
             }
         }
-        scratch.Clear();
-        foreach (var kv in emitters) if (kv.Key < lo || kv.Key > hi) scratch.Add(kv.Key);
-        foreach (int k in scratch) { Recycle(emitters[k].src); emitters.Remove(k); }
+        // Emitters outside the window fade out (recycled by Update once silent) rather than hard-stop.
+        foreach (var kv in emitters)
+        {
+            if (kv.Key < lo || kv.Key > hi) { kv.Value.removing = true; kv.Value.target = 0f; }
+        }
     }
 
     private void UpdateNearIndex()
