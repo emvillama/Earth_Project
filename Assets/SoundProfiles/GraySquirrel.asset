@@ -35,8 +35,8 @@ MonoBehaviour:
   callLengthMax: 5
   gapMin: 8
   gapMax: 20
-  neighborBias: 0
-  neighborRadius: 25
+  neighborBias: 0.6
+  neighborRadius: 14
   pitchJitter: 0.08
   gainJitter: 0.12
   canFlyover: 0

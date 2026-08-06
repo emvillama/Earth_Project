@@ -39,13 +39,30 @@ public class ItemSpawner : MonoBehaviour
     private PeriodController period;
 
     [Header("Spawn density — per-period budget")]
-    [Tooltip("Max NEW sounds allowed to START within each rolling window — the main density dial. " +
-             "Steady-state concurrent callers ≈ this × (avg lifetime ÷ period). Lower = calmer forest.")]
-    public int spawnsPerPeriod = 8;
+    [Tooltip("Max NEW lead calls allowed to START within each rolling window — the main density " +
+             "dial. Kept low so the forest is sparse; answers (call-and-response) are extra. " +
+             "Overridden by SpawnConfig if set there.")]
+    public int spawnsPerPeriod = 3;
     [Tooltip("Length of the rolling window the budget is measured over (seconds).")]
-    public float spawnPeriodSeconds = 30f;
-    // Timestamps of spawns inside the current rolling window (pruned each tick).
+    public float spawnPeriodSeconds = 60f;
+    // Timestamps of lead spawns inside the current rolling window (pruned each tick).
     private readonly Queue<float> recentSpawns = new Queue<float>();
+
+    [Header("Call-and-response")]
+    [Tooltip("Chance a fresh lead call is answered by nearby birds of the same species — a short " +
+             "conversation, then quiet. Only species with neighborBias > 0 answer.")]
+    [Range(0f, 1f)] public float callResponseChance = 0.85f;
+    [Tooltip("Fewest / most answers in one conversation (the back-and-forth).")]
+    public int answersMin = 1;
+    public int answersMax = 2;
+    [Tooltip("Seconds between the call and each answer — short, so it reads as a reply.")]
+    public float answerDelayMin = 2.5f;
+    public float answerDelayMax = 7f;
+    // Pending-conversation state (answers fire outside the budget, bypassing the long lead gap).
+    private int burstAnswersLeft = 0;
+    private float nextAnswerTime = 0f;
+    private SoundProfile burstProfile;
+    private Vector3 burstAnchor;
 
     [Header("Flyovers — live tuning")]
     [Tooltip("Master on/off for birds passing overhead. Only species with canFlyover are eligible.")]
@@ -200,6 +217,9 @@ public class ItemSpawner : MonoBehaviour
         densityScale = config.densityScale;
         spawnIntervalMin = config.spawnIntervalMin;
         spawnIntervalMax = config.spawnIntervalMax;
+        // Per-period budget lives in config so it can be tuned there and override the scene value.
+        if (config.spawnsPerPeriod > 0) spawnsPerPeriod = config.spawnsPerPeriod;
+        if (config.spawnPeriodSeconds > 0f) spawnPeriodSeconds = config.spawnPeriodSeconds;
         VoiceManager.Instance.maxVoices = config.maxVoices;
     }
 
@@ -352,27 +372,46 @@ public class ItemSpawner : MonoBehaviour
             itemPos.Remove(loc);
         }
 
-        // Spawn density: instead of "N sounds alive at any instant", the forest is governed by a
-        // budget of NEW sounds per rolling window (spawnsPerPeriod / spawnPeriodSeconds) — closer to
-        // how a real place has a rate of events over time. itemMax stays only as a hard safety cap.
+        // The forest is governed by a small budget of NEW *lead* calls per rolling window
+        // (spawnsPerPeriod / spawnPeriodSeconds) — a real place has a rate of events over time, not
+        // N sounds alive at once. A lead is then answered 1-2 times nearby (a short conversation),
+        // and things go quiet again. itemMax stays only as a hard safety cap.
         while (recentSpawns.Count > 0 && recentSpawns.Peek() < Time.time - spawnPeriodSeconds)
         {
             recentSpawns.Dequeue();
         }
-        // Scale the budget by the time of day — a busy dawn chorus down to a sparse night.
         float periodMul = period != null ? period.SpawnMultiplier : 1f;
         int budget = Mathf.Max(1, Mathf.RoundToInt(spawnsPerPeriod * periodMul));
-        if (recentSpawns.Count < budget && Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
+
+        if (burstAnswersLeft > 0 && Time.time >= nextAnswerTime && newItemPos.Count < itemMax)
         {
-            // Weather hush: as a storm builds, fewer and fewer new calls fire, so wildlife falls
-            // silent gradually. hush 0 = normal, 1 = (almost) nothing new spawns.
+            // Answer: a nearby bird of the same species replies, outside the budget/lead-gap so it
+            // reads as an immediate back-and-forth. Skips if that species is already at its cap.
+            if (burstProfile != null && CurrentCount(burstProfile) < burstProfile.maxConcurrent)
+            {
+                TrySpawnAt(burstProfile, true, burstAnchor, cTime, newItemPos, out _);
+            }
+            burstAnswersLeft--;
+            nextAnswerTime = Time.time + Random.Range(answerDelayMin, answerDelayMax);
+        }
+        else if (recentSpawns.Count < budget && Time.time >= nextSpawnTime && newItemPos.Count < itemMax)
+        {
+            // Lead: weather hush thins new calls as a storm builds (hush 0 = normal, 1 = silent).
             float hush = weather != null ? weather.birdHush : 0f;
             bool allowed = hush <= 0f || Random.value > hush;
-            if (allowed && TrySpawnOne(cTime, newItemPos))
+            if (allowed && TrySpawnOne(cTime, newItemPos, out SoundProfile spawned, out Vector3 pos))
             {
                 recentSpawns.Enqueue(Time.time);
+                // Start a conversation: chatty species (neighborBias > 0) get answered 1-2 times.
+                if (spawned != null && spawned.neighborBias > 0f && Random.value < callResponseChance)
+                {
+                    burstProfile = spawned;
+                    burstAnchor = pos;
+                    burstAnswersLeft = Random.Range(answersMin, answersMax + 1);
+                    nextAnswerTime = Time.time + Random.Range(answerDelayMin, answerDelayMax);
+                }
             }
-            // Space the budget out across the window (with jitter) so calls don't bunch at the start.
+            // Space leads out across the window (jittered) so conversations are far apart.
             float avgGap = spawnPeriodSeconds / budget;
             nextSpawnTime = Time.time + avgGap * Random.Range(0.55f, 1.45f);
         }
@@ -384,8 +423,12 @@ public class ItemSpawner : MonoBehaviour
     // player bubble), configure it, and play. Returns true if it spawned. Placement is either
     // uniform+density-weighted, or — for call-and-response — clustered near a same-species
     // neighbor so new calls answer existing birds instead of firing everywhere.
-    private bool TrySpawnOne(float cTime, Dictionary<Vector3, Tile> map)
+    private bool TrySpawnOne(float cTime, Dictionary<Vector3, Tile> map,
+                             out SoundProfile spawnedProfile, out Vector3 spawnedPos)
     {
+        spawnedProfile = null;
+        spawnedPos = Vector3.zero;
+
         // Profile is position-independent, so choose it up front: it decides both the
         // concurrency check and whether this spawn should cluster near a neighbor.
         SoundProfile profile = SelectProfile();
@@ -395,28 +438,47 @@ public class ItemSpawner : MonoBehaviour
         }
 
         // Fly-over: an eligible mobile species can spawn as a bird passing overhead instead of a
-        // perched caller. Own placement (chord over the player), so it bypasses the ground-spawn
-        // loop below and its player-exclusion/density gates.
+        // perched caller. Own placement (chord over the player), bypassing the ground-spawn path.
         if (enableFlyovers && profile != null && profile.canFlyover && Random.value < flyoverChance)
         {
-            return SpawnFlyover(cTime, map, profile);
+            if (SpawnFlyover(cTime, map, profile))
+            {
+                spawnedProfile = profile;
+                spawnedPos = player.transform.position;
+                return true;
+            }
+            return false;
         }
 
+        // Call-and-response: with neighborBias chance, anchor this lead near an existing individual
+        // of the same species instead of spreading it uniformly. Read fresh so live tuning applies.
+        float bias = overrideNeighbor ? neighborBiasOverride
+                                      : (profile != null ? profile.neighborBias : 0f);
+        Vector3 anchor = Vector3.zero;
+        bool clustered = profile != null
+            && bias > 0f
+            && Random.value < bias
+            && TryPickNeighborAnchor(profile, map, out anchor);
+
+        if (TrySpawnAt(profile, clustered, anchor, cTime, map, out spawnedPos))
+        {
+            spawnedProfile = profile;
+            return true;
+        }
+        return false;
+    }
+
+    // Place and start one individual of `profile`. Clustered → lands near `anchor` (a neighbor or a
+    // call-and-response answer); otherwise placed uniformly with Perlin density weighting. Shared by
+    // lead spawns and answers so their placement can't drift apart. Reports the spawn position.
+    private bool TrySpawnAt(SoundProfile profile, bool clustered, Vector3 anchor, float cTime,
+                            Dictionary<Vector3, Tile> map, out Vector3 spawnedPos)
+    {
+        spawnedPos = Vector3.zero;
         for (int attempt = 0; attempt < 10; attempt++)
         {
-            // Call-and-response: with neighborBias chance, anchor this spawn near an existing
-            // individual of the same species instead of spreading it uniformly. Read fresh each
-            // spawn so the live-tuning overrides on the spawner take effect during Play.
-            float bias = overrideNeighbor ? neighborBiasOverride
-                                          : (profile != null ? profile.neighborBias : 0f);
-            Vector3 anchor = Vector3.zero;
-            bool clustered = profile != null
-                && bias > 0f
-                && Random.value < bias
-                && TryPickNeighborAnchor(profile, map, out anchor);
-
             int wx, wz;
-            if (clustered)
+            if (clustered && profile != null)
             {
                 float radius = overrideNeighbor ? neighborRadiusOverride : profile.neighborRadius;
                 float ang = Random.Range(0f, Mathf.PI * 2f);
@@ -451,8 +513,7 @@ public class ItemSpawner : MonoBehaviour
             }
 
             // Perlin density-weighted acceptance: life clusters into pockets vs clearings.
-            // Skipped for clustered spawns — the neighbor anchor already provides the clustering,
-            // and re-gating on density would fight it.
+            // Skipped for clustered spawns — the anchor already clusters them.
             if (!clustered)
             {
                 float density = Mathf.PerlinNoise((loc.x + DensityOffset) / densityScale,
@@ -480,6 +541,7 @@ public class ItemSpawner : MonoBehaviour
             o.audioManager = audioManager;
             o.profile = profile;
             map[loc] = o;
+            spawnedPos = loc;
             return true;
         }
         return false;

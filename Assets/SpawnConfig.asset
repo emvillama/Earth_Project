@@ -27,3 +27,5 @@ MonoBehaviour:
   densityScale: 40
   spawnIntervalMin: 1
   spawnIntervalMax: 3
+  spawnsPerPeriod: 3
+  spawnPeriodSeconds: 60

@@ -24,7 +24,7 @@ MonoBehaviour:
   - clip: {fileID: 8300000, guid: 9c860abbc640e4e4bbbb950fd499e79c, type: 3}
     weight: 1
   spawnWeight: 4
-  maxConcurrent: 1
+  maxConcurrent: 2
   minHeight: 5
   maxHeight: 15
   minDistance: 5
@@ -35,8 +35,8 @@ MonoBehaviour:
   callLengthMax: 7
   gapMin: 12
   gapMax: 30
-  neighborBias: 0
-  neighborRadius: 25
+  neighborBias: 0.7
+  neighborRadius: 28
   pitchJitter: 0.04
   gainJitter: 0.1
   canFlyover: 0

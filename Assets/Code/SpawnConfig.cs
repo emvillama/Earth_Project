@@ -41,6 +41,12 @@ public class SpawnConfig : ScriptableObject
     [Tooltip("Max seconds between new spawns.")]
     public float spawnIntervalMax = 3.0f;
 
+    [Header("Per-period budget (main density dial)")]
+    [Tooltip("Max NEW lead calls per rolling window. Low = sparse forest; answers are extra. 0 = keep spawner default.")]
+    public int spawnsPerPeriod = 3;
+    [Tooltip("Rolling window the lead budget is measured over (seconds). 0 = keep spawner default.")]
+    public float spawnPeriodSeconds = 60f;
+
     [Header("Density (Perlin clustering)")]
     [Range(0f, 1f)]
     [Tooltip("0 = uniform spread, 1 = strong clumps and clearings.")]
