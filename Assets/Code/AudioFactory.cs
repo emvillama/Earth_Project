@@ -29,6 +29,21 @@ public static class AudioFactory
         s.spatialize = true;   // HRTF binaural via the Steam Audio spatializer plugin
         s.minDistance = minDistance;
         s.rolloffMode = rolloff;
+        EnableSteamAudio(s);
         return s;
+    }
+
+    // 3.3b-i: attach Steam Audio's per-source processing for geometry-free realism — air absorption
+    // (distant sounds lose their highs) + distance attenuation. Occlusion/reflections stay off here;
+    // they need acoustic geometry (3.3b-ii). Guarded so the project still compiles without the plugin.
+    public static void EnableSteamAudio(AudioSource s)
+    {
+#if STEAMAUDIO_ENABLED
+        var sa = s.GetComponent<SteamAudio.SteamAudioSource>();
+        if (sa == null) sa = s.gameObject.AddComponent<SteamAudio.SteamAudioSource>();
+        sa.directBinaural = true;
+        sa.airAbsorption = true;
+        sa.distanceAttenuation = true;
+#endif
     }
 }

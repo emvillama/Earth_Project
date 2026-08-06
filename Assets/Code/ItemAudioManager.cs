@@ -62,6 +62,7 @@ public class ItemAudioManager : MonoBehaviour
         {
             audioSource.spatialBlend = 1f;   // full 3D: distance drives loudness
             audioSource.spatialize = true;   // HRTF binaural via the Steam Audio spatializer (3.3)
+            AudioFactory.EnableSteamAudio(audioSource); // 3.3b-i: air absorption + physics distance
         }
     }
 
