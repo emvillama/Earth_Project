@@ -322,7 +322,10 @@ public class RiverSystem : MonoBehaviour
         if (t < loopCrossfade) k = (float)(t / loopCrossfade);
         else if (t > clipDur - loopCrossfade) k = (float)((clipDur - t) / loopCrossfade);
         else k = 1f;
-        return Mathf.Sqrt(Mathf.Clamp01(k));
+        // Linear (not equal-power): the two copies play the clip's end vs start of the SAME steady
+        // water texture — near-correlated — so linear holds the seam at constant level (no doubling
+        // bump, no dip), which is what we want here. Beds keep sqrt since they're quiet + varied.
+        return Mathf.Clamp01(k);
     }
 
     private void Recycle(Em e)
