@@ -61,7 +61,7 @@ public class ItemAudioManager : MonoBehaviour
         else
         {
             audioSource.spatialBlend = 1f;   // full 3D: distance drives loudness
-            audioSource.spatialize = false;  // use Unity native 3D (no external spatializer plugin)
+            audioSource.spatialize = true;   // HRTF binaural via the Steam Audio spatializer (3.3)
         }
     }
 
