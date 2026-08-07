@@ -47,8 +47,9 @@ public class TouchControls : MonoBehaviour, IInputSource
         {
             Touch t = Input.GetTouch(i);
             bool leftSide = t.position.x < Screen.width * 0.5f;
-            // Don't grab a touch that starts on a UI button (e.g. the Menu button) as a stick.
-            if (t.phase == TouchPhase.Began && !OverUI(t.fingerId))
+            // Only the bottom half drives the sticks (they live there), and never a tap on a UI
+            // button — so the Menu button and top UI don't jerk the joysticks.
+            if (t.phase == TouchPhase.Began && t.position.y < Screen.height * 0.5f && !OverUI(t.fingerId))
             {
                 if (leftSide && leftFinger == -1) leftFinger = t.fingerId;
                 else if (!leftSide && rightFinger == -1) rightFinger = t.fingerId;
@@ -90,7 +91,8 @@ public class TouchControls : MonoBehaviour, IInputSource
     // hold the mouse in the left half to drive Move, the right half to drive Look.
     private void EditorMouse(ref bool leftHeld, ref bool rightHeld, ref Vector2 leftOff, ref Vector2 rightOff)
     {
-        if (Input.GetMouseButtonDown(0) && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
+        if (Input.GetMouseButtonDown(0) && Input.mousePosition.y < Screen.height * 0.5f
+            && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
             mouseSide = Input.mousePosition.x < Screen.width * 0.5f ? 0 : 1;
         if (Input.GetMouseButton(0) && mouseSide >= 0)
         {
