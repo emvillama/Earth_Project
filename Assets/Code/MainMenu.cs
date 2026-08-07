@@ -20,6 +20,7 @@ public class MainMenu : MonoBehaviour
     private Font font;
     private Canvas canvas;
     private Image globeImg;
+    private Sprite borderSprite;
     private readonly List<List<GameObject>> rowFrames = new List<List<GameObject>>();
 
     private static readonly Color SkyTop = new Color(0.55f, 0.78f, 0.96f, 1f);
@@ -40,6 +41,35 @@ public class MainMenu : MonoBehaviour
         return t == null ? null : Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f));
     }
 
+    // A white rounded-rectangle OUTLINE (transparent centre) for the selection highlight, with the
+    // same corner rounding as the option tiles.
+    private Sprite RoundBorder(int size, float radius, float thickness)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        float half = size * 0.5f;
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float px = x - half + 0.5f, py = y - half + 0.5f;
+                float outer = RoundRectSDF(px, py, half - 1f, half - 1f, radius);
+                float inner = RoundRectSDF(px, py, half - 1f - thickness, half - 1f - thickness, Mathf.Max(1f, radius - thickness));
+                float a = (outer <= 0f && inner > 0f)
+                    ? Mathf.Min(Mathf.Clamp01(-outer / 1.5f), Mathf.Clamp01(inner / 1.5f)) : 0f;
+                tex.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+            }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
+
+    private static float RoundRectSDF(float px, float py, float hw, float hh, float r)
+    {
+        float qx = Mathf.Abs(px) - (hw - r);
+        float qy = Mathf.Abs(py) - (hh - r);
+        float outside = Mathf.Sqrt(Mathf.Max(qx, 0f) * Mathf.Max(qx, 0f) + Mathf.Max(qy, 0f) * Mathf.Max(qy, 0f));
+        float inside = Mathf.Min(Mathf.Max(qx, qy), 0f);
+        return outside + inside - r;
+    }
+
     private void Build()
     {
         if (FindFirstObjectByType<EventSystem>() == null)
@@ -50,6 +80,8 @@ public class MainMenu : MonoBehaviour
         var sc = cgo.AddComponent<CanvasScaler>(); sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         sc.referenceResolution = new Vector2(1080, 1920); sc.matchWidthOrHeight = 0.5f;
         cgo.AddComponent<GraphicRaycaster>();
+
+        borderSprite = RoundBorder(128, 128 * 0.16f, 7f);
 
         Panel(Vector2.zero, new Vector2(1300, 2200), SkyTop);
 
@@ -103,8 +135,8 @@ public class MainMenu : MonoBehaviour
             var crt = cell.GetComponent<RectTransform>(); crt.sizeDelta = new Vector2(tile, tile); crt.anchoredPosition = new Vector2(x, y);
 
             var frame = new GameObject("sel", typeof(RectTransform)); frame.transform.SetParent(cell.transform, false);
-            var frt = frame.GetComponent<RectTransform>(); frt.sizeDelta = new Vector2(tile + 18, tile + 18); frt.anchoredPosition = Vector2.zero;
-            var fimg = frame.AddComponent<Image>(); fimg.color = Green; fimg.raycastTarget = false; frame.SetActive(false);
+            var frt = frame.GetComponent<RectTransform>(); frt.sizeDelta = new Vector2(tile + 16, tile + 16); frt.anchoredPosition = Vector2.zero;
+            var fimg = frame.AddComponent<Image>(); fimg.sprite = borderSprite; fimg.color = Color.white; fimg.raycastTarget = false; frame.SetActive(false);
 
             var icon = ImageAt(cell.transform, Spr(o.icon), Vector2.zero, new Vector2(tile, tile));
             if (o.locked) icon.color = new Color(1, 1, 1, 0.32f);
