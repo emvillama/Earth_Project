@@ -38,6 +38,11 @@ public class ItemSpawner : MonoBehaviour
     private WeatherController weather;
     private PeriodController period;
 
+    [Header("Flow")]
+    [Tooltip("Show the main menu (time of day / weather / biome) before building the world.")]
+    public bool showMenu = true;
+    private bool worldStarted = false;
+
     [Header("Spawn density — per-period budget")]
     [Tooltip("Max NEW lead calls allowed to START within each rolling window — the main density " +
              "dial. Kept low so the forest is sparse; answers (call-and-response) are extra. " +
@@ -129,6 +134,23 @@ public class ItemSpawner : MonoBehaviour
             defaultCapacity: itemMax,
             maxSize: itemMax * 2);
 
+        // Main menu first (3.5): it calls BeginWorld() once the player picks and hits Start.
+        if (showMenu && !GameConfig.Configured)
+        {
+            var menuGo = new GameObject("MainMenu");
+            menuGo.AddComponent<MainMenu>().spawner = this;
+            return;
+        }
+        BeginWorld();
+    }
+
+    // Builds the living world (beds, river, reverb, weather, period, trees) and starts spawning.
+    // Split out of Start so the main menu can defer it until the player chooses their settings.
+    public void BeginWorld()
+    {
+        if (worldStarted) return;
+        worldStarted = true;
+
         // Continuous diffuse floor(s) — layered wind/insects, each crossfade-looped 2D.
         AmbientBed windBed = null, cricketBed = null;
         if (biome != null)
@@ -187,11 +209,18 @@ public class ItemSpawner : MonoBehaviour
         var treesGo = new GameObject("AcousticTrees");
         treesGo.AddComponent<AcousticTrees>().player = player != null ? player.transform : null;
 
+        // Apply the player's main-menu choices.
+        period.current = GameConfig.Period;
+        weather.enableWeather = GameConfig.WeatherEnabled;
+        weather.formChance = GameConfig.WeatherChance;
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
     private void Update()
     {
+        if (!worldStarted) return; // wait on the main menu
+
         // Run management on a steady tick (not gated on movement) so paced spawning and
         // despawns happen whether the player is walking or standing still.
         manageTimer += Time.deltaTime;

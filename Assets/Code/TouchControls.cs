@@ -32,6 +32,8 @@ public class TouchControls : MonoBehaviour, IInputSource
 
     void Update()
     {
+        if (!GameConfig.Configured) return; // stay dormant while the main menu is up
+
         LookX = 0f; LookY = 0f; // look is a per-frame drag delta
 
         bool moving = false;
