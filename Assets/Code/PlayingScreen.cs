@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 
 // The "playing" screen (FLEDGE 3.5). Layers, back to front: a solid sky-colour fill (recolours by
@@ -27,11 +28,20 @@ public class PlayingScreen : MonoBehaviour
 
         // UI canvas — ABOVE the joysticks, so its buttons render on top and stay tappable.
         var ui = MakeCanvas("PlayingUI", 150);
+        // Make sure an EventSystem exists so UI taps register even if the menu's was torn down.
+        if (FindFirstObjectByType<EventSystem>() == null)
+            new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+
         string w = !GameConfig.WeatherEnabled ? "clear skies"
                  : GameConfig.StormLocked ? "in a storm" : "weather rolling through";
-        MakeButton(ui.transform, "Menu", new Vector2(-340, 845), new Vector2(260, 150), Back);
-        Panel(ui.transform, new Vector2(160, 845), new Vector2(560, 96), new Color(1f, 1f, 1f, 0.22f));
-        Label(ui.transform, GameConfig.Biome + "   ·   " + GameConfig.Period + "   ·   " + w, new Vector2(160, 845), 30, Color.white);
+
+        // Menu: draw the "Menu" label, then a fully-transparent button IN FRONT of it (added last so it
+        // renders on top). The text stays readable; a tap anywhere in the area hits the button and resets.
+        Label(ui.transform, "Menu", new Vector2(-360, 845), 46, Color.white);
+        MakeTapButton(ui.transform, new Vector2(-360, 845), new Vector2(340, 170), Back);
+
+        Panel(ui.transform, new Vector2(170, 845), new Vector2(540, 96), new Color(1f, 1f, 1f, 0.22f));
+        Label(ui.transform, GameConfig.Biome + "   ·   " + GameConfig.Period + "   ·   " + w, new Vector2(170, 845), 30, Color.white);
         Label(ui.transform, "close your eyes and walk", new Vector2(0, 120), 36, new Color(1f, 1f, 1f, 0.9f));
     }
 
@@ -95,17 +105,18 @@ public class PlayingScreen : MonoBehaviour
         var go = new GameObject("Lbl", typeof(RectTransform)); go.transform.SetParent(parent, false);
         var rt = go.GetComponent<RectTransform>(); rt.sizeDelta = new Vector2(1040, size + 24); rt.anchoredPosition = pos;
         var txt = go.AddComponent<Text>(); txt.text = text; txt.font = font; txt.fontSize = size; txt.alignment = TextAnchor.MiddleCenter; txt.color = color;
+        txt.raycastTarget = false;
     }
 
-    private void MakeButton(Transform parent, string text, Vector2 pos, Vector2 size, System.Action onClick)
+    // A transparent button placed IN FRONT of its label (added last, so it renders on top). Any tap in
+    // the rect fires onClick; the label behind stays readable because the button is see-through.
+    private void MakeTapButton(Transform parent, Vector2 pos, Vector2 size, System.Action onClick)
     {
-        var go = new GameObject("Btn_" + text, typeof(RectTransform)); go.transform.SetParent(parent, false);
+        var go = new GameObject("MenuTapButton", typeof(RectTransform)); go.transform.SetParent(parent, false);
         var rt = go.GetComponent<RectTransform>(); rt.sizeDelta = size; rt.anchoredPosition = pos;
-        var img = go.AddComponent<Image>(); img.color = new Color(0f, 0f, 0f, 0.32f); // visible rounded-ish tap target so the whole area is obviously clickable
+        var img = go.AddComponent<Image>(); img.color = new Color(1f, 1f, 1f, 0.01f); // see-through, still a raycast target
+        img.raycastTarget = true;
         var btn = go.AddComponent<Button>(); btn.targetGraphic = img; btn.onClick.AddListener(() => onClick());
-        var t = new GameObject("Text", typeof(RectTransform)); t.transform.SetParent(go.transform, false);
-        var trt = t.GetComponent<RectTransform>(); trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one; trt.sizeDelta = Vector2.zero;
-        var txt = t.AddComponent<Text>(); txt.text = text; txt.font = font; txt.fontSize = 40; txt.alignment = TextAnchor.MiddleCenter; txt.color = Color.white;
-        txt.raycastTarget = false; // let taps pass through the text to the button behind it
+        go.transform.SetAsLastSibling(); // ensure it's in front of the "Menu" text
     }
 }
