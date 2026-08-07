@@ -53,9 +53,7 @@ public class MainMenu : MonoBehaviour
 
         Panel(Vector2.zero, new Vector2(1300, 2200), SkyTop);
 
-        Label("Escape the city.", new Vector2(0, 870), 40, new Color(1, 1, 1, 0.9f), TextAnchor.MiddleCenter);
-        Label("Embrace nature.", new Vector2(0, 812), 66, Color.white, TextAnchor.MiddleCenter);
-        Label("Create your perfect soundscape.", new Vector2(0, 752), 30, new Color(1, 1, 1, 0.6f), TextAnchor.MiddleCenter);
+        Label("Walk Earth", new Vector2(0, 840), 84, Color.white, TextAnchor.MiddleCenter);
 
         globeImg = ImageAt(canvas.transform, Spr("globe"), new Vector2(0, 430), new Vector2(600, 600));
 

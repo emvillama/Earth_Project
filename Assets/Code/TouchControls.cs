@@ -23,6 +23,7 @@ public class TouchControls : MonoBehaviour, IInputSource
     private Vector2 leftCenter, rightCenter; // screen px
     private float radius;
     private int leftFinger = -1, rightFinger = -1;
+    private int mouseSide = -1; // editor mouse-as-touch: 0 = left stick, 1 = right stick
 
     void Start()
     {
@@ -62,6 +63,10 @@ public class TouchControls : MonoBehaviour, IInputSource
             }
         }
 
+#if UNITY_EDITOR
+        if (Input.touchCount == 0) EditorMouse(ref leftHeld, ref rightHeld, ref leftOff, ref rightOff);
+#endif
+
         if (leftHeld)
         {
             Horizontal = leftOff.x / radius;
@@ -77,6 +82,23 @@ public class TouchControls : MonoBehaviour, IInputSource
         if (leftKnob != null) leftKnob.anchoredPosition = leftHeld ? leftOff : Vector2.zero;
         if (rightKnob != null) rightKnob.anchoredPosition = rightHeld ? rightOff : Vector2.zero;
     }
+
+#if UNITY_EDITOR
+    // Mouse-as-touch so the Unity Game view / Device Simulator is a full preview without a phone:
+    // hold the mouse in the left half to drive Move, the right half to drive Look.
+    private void EditorMouse(ref bool leftHeld, ref bool rightHeld, ref Vector2 leftOff, ref Vector2 rightOff)
+    {
+        if (Input.GetMouseButtonDown(0))
+            mouseSide = Input.mousePosition.x < Screen.width * 0.5f ? 0 : 1;
+        if (Input.GetMouseButton(0) && mouseSide >= 0)
+        {
+            Vector2 mp = Input.mousePosition;
+            if (mouseSide == 0) { leftOff = Vector2.ClampMagnitude(mp - leftCenter, radius); leftHeld = true; }
+            else { rightOff = Vector2.ClampMagnitude(mp - rightCenter, radius); rightHeld = true; }
+        }
+        if (Input.GetMouseButtonUp(0)) mouseSide = -1;
+    }
+#endif
 
     private void BuildUI()
     {

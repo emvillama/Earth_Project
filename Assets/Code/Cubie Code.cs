@@ -21,8 +21,9 @@ public class Cubie : MonoBehaviour
         input = GetComponent<IInputSource>();
         if (input == null)
         {
-            // Phone → on-screen joystick + drag-to-look (3.4); editor/desktop → keyboard + mouse.
-            if (Application.isMobilePlatform)
+            // Phone (and the editor, so we can preview with the mouse) → on-screen joysticks;
+            // standalone desktop builds → keyboard + mouse.
+            if (Application.isMobilePlatform || Application.isEditor)
                 input = gameObject.AddComponent<TouchControls>();
             else
                 input = gameObject.AddComponent<KeyboardMouseInputSource>();
