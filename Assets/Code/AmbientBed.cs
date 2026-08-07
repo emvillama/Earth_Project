@@ -26,6 +26,22 @@ public class AmbientBed : MonoBehaviour
         crossfade = Mathf.Max(0.25f, xf);
     }
 
+    // Swap to a new clip and restart the seamless loop. Safe before Start (just stores the clip) or
+    // during play — callers swap while the bed is silent (e.g. rain between storms) so it's inaudible.
+    public void SetClip(AudioClip c)
+    {
+        if (c == null || c == clip) return;
+        clip = c;
+        if (s0 == null) return; // not started yet — Start() will pick it up
+        dur = (double)clip.samples / clip.frequency;
+        if (dur <= crossfade * 2.0) crossfade = (float)(dur * 0.25);
+        s0.Stop(); s1.Stop();
+        s0.clip = clip; s1.clip = clip;
+        double t0 = AudioSettings.dspTime + 0.05;
+        start0 = t0; s0.PlayScheduled(start0);
+        start1 = t0 + dur - crossfade; s1.PlayScheduled(start1);
+    }
+
     void Start()
     {
         if (clip == null)

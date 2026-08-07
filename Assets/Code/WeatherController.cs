@@ -95,7 +95,9 @@ public class WeatherController : MonoBehaviour
     private float phaseTimer = 0f;
     private float CricketReturnAt => calmQuietSeconds + cricketDelayAfterBirds; // from calm start
 
-    private AudioSource rainHeavy, rainLight, thunder;
+    private AudioSource thunder;
+    private AmbientBed rainHeavyBed, rainLightBed; // rain loops seamlessly, same as the wind/cricket beds
+    private float rainHeavyVol, rainLightVol;      // smoothed levels pushed into each bed's volumeScale
     private AudioClip[] rainHeavyClips, rainLightClips, thunderDistant, thunderClose;
     private float thunderTimer = 0f;
 
@@ -106,12 +108,11 @@ public class WeatherController : MonoBehaviour
         thunderDistant = Resources.LoadAll<AudioClip>("Weather/ThunderDistant");
         thunderClose   = Resources.LoadAll<AudioClip>("Weather/ThunderClose");
 
-        rainHeavy = NewSource("RainHeavy", loop: true);
-        rainLight = NewSource("RainLight", loop: true);
-        thunder   = NewSource("Thunder", loop: false);
-        rainHeavy.volume = 0f;
-        rainLight.volume = 0f;
-        PickRain();               // seed both loops with a random clip and start them (silent)
+        // Rain loops through AmbientBed — the same seamless dsp-clock crossfade the wind/cricket beds
+        // use — so the downpour never seams/cuts at the loop point. Level is carried by volumeScale.
+        rainHeavyBed = MakeRainBed("RainHeavy", rainHeavyClips);
+        rainLightBed = MakeRainBed("RainLight", rainLightClips);
+        thunder      = NewSource("Thunder", loop: false);
 
         // "Stormy" locks straight into a full storm from frame one (see the lock in Update).
         if (lockStorm) { phase = Phase.Storm; intensity = 1f; }
@@ -122,6 +123,16 @@ public class WeatherController : MonoBehaviour
         var go = new GameObject(name);
         go.transform.SetParent(transform);
         return AudioFactory.Add2D(go, loop); // weather is everywhere — a 2D layer
+    }
+
+    private AmbientBed MakeRainBed(string name, AudioClip[] clips)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(transform);
+        var bed = go.AddComponent<AmbientBed>();
+        bed.Init(RandomClip(clips), 1f, 2.5f); // volume 1: the actual level comes from volumeScale
+        bed.volumeScale = 0f;                  // silent until ApplyAudio drives it
+        return bed;
     }
 
     private bool Active => spawner == null || spawner.enableWeather;
@@ -249,8 +260,10 @@ public class WeatherController : MonoBehaviour
         float heavyTarget = Mathf.Clamp01((intensity - lightRainCeil) / Mathf.Max(0.01f, 1f - lightRainCeil)) * rainMaxVol;
         float lightTarget = Mathf.Clamp01(intensity / Mathf.Max(0.01f, lightRainCeil)) * lightRainMaxVol
                             * (1f - Mathf.Clamp01((intensity - lightRainCeil) / 0.4f));
-        if (rainHeavy != null) rainHeavy.volume = Mathf.MoveTowards(rainHeavy.volume, heavyTarget, dt * 0.5f);
-        if (rainLight != null) rainLight.volume = Mathf.MoveTowards(rainLight.volume, lightTarget, dt * 0.5f);
+        rainHeavyVol = Mathf.MoveTowards(rainHeavyVol, heavyTarget, dt * 0.5f);
+        rainLightVol = Mathf.MoveTowards(rainLightVol, lightTarget, dt * 0.5f);
+        if (rainHeavyBed != null) rainHeavyBed.volumeScale = rainHeavyVol;
+        if (rainLightBed != null) rainLightBed.volumeScale = rainLightVol;
 
         // Thunder: more frequent and louder as intensity rises; distant rumbles early, cracks at peak.
         if (thunder != null)
@@ -281,18 +294,9 @@ public class WeatherController : MonoBehaviour
 
     private void PickRain()
     {
-        AssignLoop(rainHeavy, rainHeavyClips);
-        AssignLoop(rainLight, rainLightClips);
-    }
-
-    private void AssignLoop(AudioSource src, AudioClip[] group)
-    {
-        if (src == null) return;
-        AudioClip c = RandomClip(group);
-        if (c == null) return;
-        src.clip = c;
-        src.Play();
-        if (c.length > 1f) src.time = Random.Range(0f, c.length); // random offset so layers don't phase
+        // Swap fresh clips into the beds (done while rain is silent, so the restart is inaudible).
+        if (rainHeavyBed != null) rainHeavyBed.SetClip(RandomClip(rainHeavyClips));
+        if (rainLightBed != null) rainLightBed.SetClip(RandomClip(rainLightClips));
     }
 
     private AudioClip PickThunder()
