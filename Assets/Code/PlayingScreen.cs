@@ -29,16 +29,26 @@ public class PlayingScreen : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
         cgo.AddComponent<GraphicRaycaster>();
 
-        Panel(canvas.transform, Vector2.zero, new Vector2(1400, 2400), new Color(0.05f, 0.07f, 0.06f, 1f));
+        // Full-screen forest scene covers the visual-less 3D world.
+        var bg = new GameObject("BG", typeof(RectTransform));
+        bg.transform.SetParent(canvas.transform, false);
+        var brt = bg.GetComponent<RectTransform>();
+        brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one; brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+        var bimg = bg.AddComponent<Image>();
+        var tex = Resources.Load<Texture2D>("UI/playbg_forest");
+        if (tex != null) bimg.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        else bimg.color = new Color(0.05f, 0.07f, 0.06f, 1f);
 
         string w = !GameConfig.WeatherEnabled ? "clear skies"
                  : GameConfig.StormLocked ? "in a storm"
                  : "weather rolling through";
-        Label(canvas.transform, GameConfig.Biome, new Vector2(0, 240), 84, new Color(0.9f, 0.95f, 0.9f, 1f));
-        Label(canvas.transform, GameConfig.Period + " · " + w, new Vector2(0, 120), 40, new Color(1f, 1f, 1f, 0.6f));
-        Label(canvas.transform, "close your eyes and walk", new Vector2(0, -30), 34, new Color(1f, 1f, 1f, 0.4f));
 
-        MakeButton(canvas.transform, "Menu", new Vector2(0, 820), new Vector2(340, 110), Back);
+        // Top: back-to-menu button + a selection pill.
+        MakeButton(canvas.transform, "Menu", new Vector2(-390, 850), new Vector2(210, 92), Back);
+        Panel(canvas.transform, new Vector2(80, 850), new Vector2(680, 96), new Color(1f, 1f, 1f, 0.22f));
+        Label(canvas.transform, GameConfig.Biome + "   ·   " + GameConfig.Period + "   ·   " + w, new Vector2(80, 850), 32, Color.white);
+
+        Label(canvas.transform, "close your eyes and walk", new Vector2(0, 120), 36, new Color(1f, 1f, 1f, 0.9f));
     }
 
     private void Back()
