@@ -14,8 +14,7 @@ public class Cubie : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        Cursor.visible = false;
-        Cursor.lockState = CursorLockMode.Locked;
+        // Cursor lock is handled in Update — kept free while the main menu is up so it stays clickable.
 
         // Input behind an interface (Stage 4 swaps keyboard for GPS/motion). Auto-adds the
         // keyboard/mouse source if none is present, so no scene wiring is needed.
@@ -37,6 +36,15 @@ public class Cubie : MonoBehaviour
 
     void Update()
     {
+        // While the main menu is up: free the cursor (so its buttons are clickable) and freeze the
+        // player. Once the game starts, lock/hide the cursor for mouse-look. Touch is unaffected.
+        if (!GameConfig.Configured)
+        {
+            if (Cursor.lockState != CursorLockMode.None) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
+            return;
+        }
+        if (Cursor.lockState != CursorLockMode.Locked) { Cursor.lockState = CursorLockMode.Locked; Cursor.visible = false; }
+
         float h = input.Horizontal * playerSpeed;
         float v = input.Vertical * playerSpeed;
         float inputX = input.LookX * mouseSens;
