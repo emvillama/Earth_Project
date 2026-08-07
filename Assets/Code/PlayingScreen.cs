@@ -101,10 +101,11 @@ public class PlayingScreen : MonoBehaviour
     {
         var go = new GameObject("Btn_" + text, typeof(RectTransform)); go.transform.SetParent(parent, false);
         var rt = go.GetComponent<RectTransform>(); rt.sizeDelta = size; rt.anchoredPosition = pos;
-        var img = go.AddComponent<Image>(); img.color = new Color(1f, 1f, 1f, 0.2f);
+        var img = go.AddComponent<Image>(); img.color = new Color(1f, 1f, 1f, 0.1f); // near-transparent, still catches taps
         var btn = go.AddComponent<Button>(); btn.targetGraphic = img; btn.onClick.AddListener(() => onClick());
         var t = new GameObject("Text", typeof(RectTransform)); t.transform.SetParent(go.transform, false);
         var trt = t.GetComponent<RectTransform>(); trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one; trt.sizeDelta = Vector2.zero;
         var txt = t.AddComponent<Text>(); txt.text = text; txt.font = font; txt.fontSize = 40; txt.alignment = TextAnchor.MiddleCenter; txt.color = Color.white;
+        txt.raycastTarget = false; // let taps pass through the text to the button behind it
     }
 }

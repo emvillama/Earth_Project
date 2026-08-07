@@ -116,8 +116,28 @@ public class MainMenu : MonoBehaviour
         var start = MakeButton("Start Journey", new Vector2(0, -760), new Vector2(780, 150), Green, Begin);
         start.GetComponentInChildren<Text>().fontSize = 52;
 
-        Select(0, 0); Select(1, 0); Select(2, 1); // Forest, Sunny, Afternoon(Midday)
+        // Restore the last-used choices (GameConfig persists across a return from the playing screen),
+        // so re-opening the menu shows what you had picked instead of resetting to defaults.
+        biome = GameConfig.Biome;
+        period = GameConfig.Period;
+        weatherEnabled = GameConfig.WeatherEnabled;
+        weatherChance = GameConfig.WeatherChance;
+        startStorm = GameConfig.StormLocked;
+        Select(0, 0);                     // Forest (only unlocked biome for now)
+        Select(1, startStorm ? 1 : 0);    // Rainy vs Sunny
+        Select(2, TimeIndex(period));
         TintGlobe();
+    }
+
+    private static int TimeIndex(DayPeriod p)
+    {
+        switch (p)
+        {
+            case DayPeriod.Dawn: return 0;   // Morning
+            case DayPeriod.Dusk: return 2;   // Sunset
+            case DayPeriod.Night: return 3;  // Night
+            default: return 1;               // Midday → Afternoon
+        }
     }
 
     private void RowSection(string title, float y, Opt[] opts, int rowIdx)
@@ -204,6 +224,7 @@ public class MainMenu : MonoBehaviour
         var t = new GameObject("Text", typeof(RectTransform)); t.transform.SetParent(go.transform, false);
         var trt = t.GetComponent<RectTransform>(); trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one; trt.sizeDelta = Vector2.zero;
         var txt = t.AddComponent<Text>(); txt.text = text; txt.font = font; txt.fontSize = 40; txt.alignment = TextAnchor.MiddleCenter; txt.color = Color.white;
+        txt.raycastTarget = false; // taps pass through the text to the button
         return btn;
     }
 
