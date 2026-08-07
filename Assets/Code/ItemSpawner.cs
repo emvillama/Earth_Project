@@ -209,9 +209,10 @@ public class ItemSpawner : MonoBehaviour
         var treesGo = new GameObject("AcousticTrees");
         treesGo.AddComponent<AcousticTrees>().player = player != null ? player.transform : null;
 
-        // Apply the player's main-menu choices.
+        // Apply the player's main-menu choices. (enableWeather is this spawner's own toggle, which
+        // the WeatherController reads via spawner.enableWeather.)
         period.current = GameConfig.Period;
-        weather.enableWeather = GameConfig.WeatherEnabled;
+        enableWeather = GameConfig.WeatherEnabled;
         weather.formChance = GameConfig.WeatherChance;
 
         ManageItems(Time.realtimeSinceStartup);
