@@ -29,6 +29,8 @@ public class WeatherController : MonoBehaviour
     public AmbientBed windBed;
     public AmbientBed cricketBed;
     public Transform player;
+    [Tooltip("Spawn already in a full storm (set by the menu's 'Stormy' pick); random logic continues after.")]
+    public bool beginInStorm = false;
 
     [Header("Timing (seconds) — lower these to test fast")]
     [Tooltip("While Clear, roll for a storm forming this often.")]
@@ -109,6 +111,10 @@ public class WeatherController : MonoBehaviour
         rainHeavy.volume = 0f;
         rainLight.volume = 0f;
         PickRain();               // seed both loops with a random clip and start them (silent)
+
+        // If the player chose "Stormy", drop them straight into a full storm; the normal random
+        // state machine takes over from there (it may continue, clear, and re-form as usual).
+        if (beginInStorm) { phase = Phase.Storm; intensity = 1f; }
     }
 
     private AudioSource NewSource(string name, bool loop)

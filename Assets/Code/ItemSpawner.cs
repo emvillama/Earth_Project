@@ -197,6 +197,7 @@ public class ItemSpawner : MonoBehaviour
         weather.player = player != null ? player.transform : null;
         weather.windBed = windBed;
         weather.cricketBed = cricketBed;
+        weather.beginInStorm = GameConfig.StartStorm; // "Stormy" pick → spawn into a storm
 
         // Time of day: user-selectable period (dev-toggle for now) that gates which species call,
         // how busy the forest is, and the insect-bed level. Weather layers on top of it.

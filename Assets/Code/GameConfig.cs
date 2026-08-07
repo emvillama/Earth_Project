@@ -6,5 +6,6 @@ public static class GameConfig
     public static DayPeriod Period = DayPeriod.Midday;
     public static bool WeatherEnabled = true;
     public static float WeatherChance = 0.10f;        // WeatherController.formChance (per check)
+    public static bool StartStorm = false;            // spawn already in a storm (the "Stormy" pick)
     public static string Biome = "Forest";            // only Forest for now; hook for future biomes
 }

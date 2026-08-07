@@ -15,6 +15,7 @@ public class MainMenu : MonoBehaviour
     private DayPeriod period = DayPeriod.Midday;
     private bool weatherEnabled = true;
     private float weatherChance = 0.10f;
+    private bool startStorm = false;
     private string biome = "Forest";
 
     private Font font;
@@ -58,6 +59,7 @@ public class MainMenu : MonoBehaviour
         {
             weatherEnabled = i != 0;
             weatherChance = i == 1 ? 0.05f : i == 2 ? 0.10f : i == 3 ? 0.25f : 0f;
+            startStorm = i == 3; // "Stormy" → spawn straight into a storm
         });
 
         Label("Biome", new Vector2(0, -20), 40);
@@ -78,8 +80,12 @@ public class MainMenu : MonoBehaviour
         GameConfig.Period = period;
         GameConfig.WeatherEnabled = weatherEnabled;
         GameConfig.WeatherChance = weatherChance;
+        GameConfig.StartStorm = startStorm;
         GameConfig.Biome = biome;
         GameConfig.Configured = true;
+
+        // Cover the (visual-less) 3D world with the "playing" screen — you listen, not look.
+        new GameObject("PlayingScreen").AddComponent<PlayingScreen>();
 
         if (canvas != null) Destroy(canvas.gameObject);
         if (spawner != null) spawner.BeginWorld();
