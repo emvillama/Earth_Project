@@ -36,7 +36,11 @@ public class PlayingScreen : MonoBehaviour
         brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one; brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
         var bimg = bg.AddComponent<Image>();
         var tex = Resources.Load<Texture2D>("UI/playbg_forest");
-        if (tex != null) bimg.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        if (tex != null)
+        {
+            bimg.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+            bimg.color = SkyTint(GameConfig.Period); // shift the whole scene (sky included) by time of day
+        }
         else bimg.color = new Color(0.05f, 0.07f, 0.06f, 1f);
 
         string w = !GameConfig.WeatherEnabled ? "clear skies"
@@ -49,6 +53,18 @@ public class PlayingScreen : MonoBehaviour
         Label(canvas.transform, GameConfig.Biome + "   ·   " + GameConfig.Period + "   ·   " + w, new Vector2(80, 850), 32, Color.white);
 
         Label(canvas.transform, "close your eyes and walk", new Vector2(0, 120), 36, new Color(1f, 1f, 1f, 0.9f));
+    }
+
+    // Tints the whole scene (and its sky) to match the selected time of day.
+    private static Color SkyTint(DayPeriod p)
+    {
+        switch (p)
+        {
+            case DayPeriod.Dawn: return new Color(1f, 0.88f, 0.78f);   // warm sunrise
+            case DayPeriod.Dusk: return new Color(1f, 0.68f, 0.5f);    // orange sunset
+            case DayPeriod.Night: return new Color(0.42f, 0.5f, 0.75f);// dim cool night
+            default: return Color.white;                               // midday
+        }
     }
 
     private void Back()

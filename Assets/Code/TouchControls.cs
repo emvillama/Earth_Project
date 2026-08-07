@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 // Interim mobile controls (FLEDGE 3.4): twin on-screen joysticks — MOVE (left, walk/strafe) and
 // LOOK (right, turn/pitch at a rate while held). Both are always visible and labelled. Implements
@@ -46,7 +47,8 @@ public class TouchControls : MonoBehaviour, IInputSource
         {
             Touch t = Input.GetTouch(i);
             bool leftSide = t.position.x < Screen.width * 0.5f;
-            if (t.phase == TouchPhase.Began)
+            // Don't grab a touch that starts on a UI button (e.g. the Menu button) as a stick.
+            if (t.phase == TouchPhase.Began && !OverUI(t.fingerId))
             {
                 if (leftSide && leftFinger == -1) leftFinger = t.fingerId;
                 else if (!leftSide && rightFinger == -1) rightFinger = t.fingerId;
@@ -88,7 +90,7 @@ public class TouchControls : MonoBehaviour, IInputSource
     // hold the mouse in the left half to drive Move, the right half to drive Look.
     private void EditorMouse(ref bool leftHeld, ref bool rightHeld, ref Vector2 leftOff, ref Vector2 rightOff)
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(0) && !(EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()))
             mouseSide = Input.mousePosition.x < Screen.width * 0.5f ? 0 : 1;
         if (Input.GetMouseButton(0) && mouseSide >= 0)
         {
@@ -99,6 +101,11 @@ public class TouchControls : MonoBehaviour, IInputSource
         if (Input.GetMouseButtonUp(0)) mouseSide = -1;
     }
 #endif
+
+    private static bool OverUI(int fingerId)
+    {
+        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(fingerId);
+    }
 
     private void BuildUI()
     {
