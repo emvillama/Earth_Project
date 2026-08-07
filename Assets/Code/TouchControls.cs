@@ -108,8 +108,9 @@ public class TouchControls : MonoBehaviour, IInputSource
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 100; // above the playing screen (50)
 
-        Sprite ring = CircleSprite(128, new Color(1f, 1f, 1f, 0.16f));
-        Sprite dot = CircleSprite(96, new Color(1f, 1f, 1f, 0.42f));
+        // Dark translucent base + bright knob so both sticks read clearly on bright backgrounds.
+        Sprite ring = CircleSprite(128, new Color(0.07f, 0.11f, 0.15f, 0.40f));
+        Sprite dot = CircleSprite(96, new Color(1f, 1f, 1f, 0.78f));
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
         leftKnob = Stick(cgo.transform, leftCenter, ring, dot, "Move", font);
@@ -141,8 +142,9 @@ public class TouchControls : MonoBehaviour, IInputSource
         lrt.sizeDelta = new Vector2(radius * 2f, 50f);
         lrt.anchoredPosition = new Vector2(center.x, center.y - radius - 34f);
         var txt = lblGo.AddComponent<Text>();
-        txt.text = label; txt.font = font; txt.fontSize = 34; txt.alignment = TextAnchor.MiddleCenter;
-        txt.color = new Color(1f, 1f, 1f, 0.6f);
+        txt.text = label; txt.font = font; txt.fontSize = 36; txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = new Color(1f, 1f, 1f, 0.95f);
+        var sh = lblGo.AddComponent<Shadow>(); sh.effectColor = new Color(0, 0, 0, 0.55f); sh.effectDistance = new Vector2(1, -1);
 
         return krt;
     }
