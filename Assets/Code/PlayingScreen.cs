@@ -32,7 +32,7 @@ public class PlayingScreen : MonoBehaviour
         Panel(canvas.transform, Vector2.zero, new Vector2(1400, 2400), new Color(0.05f, 0.07f, 0.06f, 1f));
 
         string w = !GameConfig.WeatherEnabled ? "clear skies"
-                 : GameConfig.StartStorm ? "in a storm"
+                 : GameConfig.StormLocked ? "in a storm"
                  : "weather rolling through";
         Label(canvas.transform, GameConfig.Biome, new Vector2(0, 240), 84, new Color(0.9f, 0.95f, 0.9f, 1f));
         Label(canvas.transform, GameConfig.Period + " · " + w, new Vector2(0, 120), 40, new Color(1f, 1f, 1f, 0.6f));

@@ -29,8 +29,9 @@ public class WeatherController : MonoBehaviour
     public AmbientBed windBed;
     public AmbientBed cricketBed;
     public Transform player;
-    [Tooltip("Spawn already in a full storm (set by the menu's 'Stormy' pick); random logic continues after.")]
-    public bool beginInStorm = false;
+    [Tooltip("Locked full storm that never fades (the menu's 'Stormy' pick) until the player returns " +
+             "to the menu and chooses something else.")]
+    public bool lockStorm = false;
 
     [Header("Timing (seconds) — lower these to test fast")]
     [Tooltip("While Clear, roll for a storm forming this often.")]
@@ -112,9 +113,8 @@ public class WeatherController : MonoBehaviour
         rainLight.volume = 0f;
         PickRain();               // seed both loops with a random clip and start them (silent)
 
-        // If the player chose "Stormy", drop them straight into a full storm; the normal random
-        // state machine takes over from there (it may continue, clear, and re-form as usual).
-        if (beginInStorm) { phase = Phase.Storm; intensity = 1f; }
+        // "Stormy" locks straight into a full storm from frame one (see the lock in Update).
+        if (lockStorm) { phase = Phase.Storm; intensity = 1f; }
     }
 
     private AudioSource NewSource(string name, bool loop)
@@ -134,6 +134,16 @@ public class WeatherController : MonoBehaviour
         {
             phase = Phase.Clear; phaseTimer = 0f;
             intensity = Mathf.MoveTowards(intensity, 0f, dt / Mathf.Max(1f, rampSeconds));
+            ApplyAudio(dt);
+            return;
+        }
+
+        // Locked storm ("Stormy" pick): stay a full storm, never run the transition machine.
+        if (lockStorm)
+        {
+            phase = Phase.Storm;
+            intensity = Mathf.MoveTowards(intensity, 1f, dt / Mathf.Max(1f, rampSeconds));
+            phaseName = "Storm (locked)";
             ApplyAudio(dt);
             return;
         }

@@ -80,7 +80,7 @@ public class MainMenu : MonoBehaviour
         GameConfig.Period = period;
         GameConfig.WeatherEnabled = weatherEnabled;
         GameConfig.WeatherChance = weatherChance;
-        GameConfig.StartStorm = startStorm;
+        GameConfig.StormLocked = startStorm;
         GameConfig.Biome = biome;
         GameConfig.Configured = true;
 
