@@ -120,7 +120,7 @@ public class MainMenu : MonoBehaviour
 
         RowSection("Weather", -100, new[]{
             new Opt("Sunny","ic_Sunny",false,()=>{weatherEnabled=true;weatherChance=0.05f;startStorm=false;}),
-            new Opt("Rainy","ic_Rainy",false,()=>{weatherEnabled=true;startStorm=true;}),
+            new Opt("Stormy","ic_Rainy",false,()=>{weatherEnabled=true;startStorm=true;}),
             new Opt("Overcast","ic_Overcast",true,null),
             new Opt("Cloud","ic_Cloud",true,null),
             new Opt("Windy","ic_Windy",true,null),
