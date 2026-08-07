@@ -21,6 +21,7 @@ public class MainMenu : MonoBehaviour
     private Canvas canvas;
     private Image globeImg;
     private Sprite borderSprite;
+    private Sprite greyTile; // flat grey placeholder shown for locked ("Soon") options
     private readonly List<List<GameObject>> rowFrames = new List<List<GameObject>>();
 
     private static readonly Color SkyTop = new Color(0.55f, 0.78f, 0.96f, 1f);
@@ -61,6 +62,25 @@ public class MainMenu : MonoBehaviour
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
     }
 
+    // A flat grey rounded tile the same shape/size as the option icons — the placeholder for locked
+    // options, so they read as "coming soon" without borrowing another option's art.
+    private Sprite GreyTile(int size, float radius)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        float half = size * 0.5f;
+        Color fill = new Color(0.30f, 0.32f, 0.36f, 1f);
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float px = x - half + 0.5f, py = y - half + 0.5f;
+                float d = RoundRectSDF(px, py, half - 1f, half - 1f, radius);
+                float a = Mathf.Clamp01(-d / 1.5f); // opaque inside, soft anti-aliased edge
+                tex.SetPixel(x, y, new Color(fill.r, fill.g, fill.b, a));
+            }
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
+    }
+
     private static float RoundRectSDF(float px, float py, float hw, float hh, float r)
     {
         float qx = Mathf.Abs(px) - (hw - r);
@@ -82,6 +102,7 @@ public class MainMenu : MonoBehaviour
         cgo.AddComponent<GraphicRaycaster>();
 
         borderSprite = RoundBorder(128, 128 * 0.16f, 7f);
+        greyTile = GreyTile(128, 128 * 0.16f);
 
         Panel(Vector2.zero, new Vector2(1300, 2200), SkyTop);
 
@@ -158,8 +179,8 @@ public class MainMenu : MonoBehaviour
             var frt = frame.GetComponent<RectTransform>(); frt.sizeDelta = new Vector2(tile + 16, tile + 16); frt.anchoredPosition = Vector2.zero;
             var fimg = frame.AddComponent<Image>(); fimg.sprite = borderSprite; fimg.color = Color.white; fimg.raycastTarget = false; frame.SetActive(false);
 
-            var icon = ImageAt(cell.transform, Spr(o.icon), Vector2.zero, new Vector2(tile, tile));
-            if (o.locked) icon.color = new Color(1, 1, 1, 0.32f);
+            // Unlocked → its artwork; locked → a flat grey placeholder tile of the same size.
+            var icon = ImageAt(cell.transform, o.locked ? greyTile : Spr(o.icon), Vector2.zero, new Vector2(tile, tile));
 
             Label(o.locked ? "Soon" : o.label, new Vector2(x, y - tile * 0.5f - 34f), 26,
                   o.locked ? new Color(1, 1, 1, 0.5f) : Color.white, TextAnchor.MiddleCenter);
