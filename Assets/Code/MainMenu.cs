@@ -85,9 +85,9 @@ public class MainMenu : MonoBehaviour
 
         Panel(Vector2.zero, new Vector2(1300, 2200), SkyTop);
 
-        Label("Walk Earth", new Vector2(0, 840), 84, Color.white, TextAnchor.MiddleCenter);
+        Label("Walk Earth", new Vector2(0, 860), 84, Color.white, TextAnchor.MiddleCenter);
 
-        globeImg = ImageAt(canvas.transform, Spr("globe"), new Vector2(0, 430), new Vector2(600, 600));
+        globeImg = ImageAt(canvas.transform, Spr("globe"), new Vector2(0, 520), new Vector2(460, 460));
 
         RowSection("Biome", 150, new[]{
             new Opt("Forest","ic_Forest",false,()=>biome="Forest"),
@@ -97,7 +97,7 @@ public class MainMenu : MonoBehaviour
             new Opt("Meadow","ic_Meadow",true,null),
         }, 0);
 
-        RowSection("Weather", -120, new[]{
+        RowSection("Weather", -100, new[]{
             new Opt("Sunny","ic_Sunny",false,()=>{weatherEnabled=true;weatherChance=0.05f;startStorm=false;}),
             new Opt("Rainy","ic_Rainy",false,()=>{weatherEnabled=true;startStorm=true;}),
             new Opt("Overcast","ic_Overcast",true,null),
@@ -105,7 +105,7 @@ public class MainMenu : MonoBehaviour
             new Opt("Windy","ic_Windy",true,null),
         }, 1);
 
-        RowSection("Time of Day", -390, new[]{
+        RowSection("Time of Day", -350, new[]{
             new Opt("Morning","ic_Morning",false,()=>{period=DayPeriod.Dawn;TintGlobe();}),
             new Opt("Afternoon","ic_Afternoon",false,()=>{period=DayPeriod.Midday;TintGlobe();}),
             new Opt("Sunset","ic_Sunset",false,()=>{period=DayPeriod.Dusk;TintGlobe();}),
@@ -113,7 +113,7 @@ public class MainMenu : MonoBehaviour
             new Opt("LateNight","ic_LateNight",true,null),
         }, 2);
 
-        var start = MakeButton("Start Journey", new Vector2(0, -760), new Vector2(780, 150), Green, Begin);
+        var start = MakeButton("Start Journey", new Vector2(0, -720), new Vector2(780, 150), Green, Begin);
         start.GetComponentInChildren<Text>().fontSize = 52;
 
         // Restore the last-used choices (GameConfig persists across a return from the playing screen),
@@ -144,7 +144,7 @@ public class MainMenu : MonoBehaviour
     {
         Label(title, new Vector2(-430, y + 110), 34, Color.white, TextAnchor.MiddleLeft);
         var frames = new List<GameObject>();
-        float tile = 168f, gap = 34f;
+        float tile = 150f, gap = 20f; // smaller + tighter so the 5 tiles sit well inside the screen edges
         float span = 4 * (tile + gap);
         for (int i = 0; i < opts.Length; i++)
         {
