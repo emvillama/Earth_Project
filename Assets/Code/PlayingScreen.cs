@@ -29,9 +29,9 @@ public class PlayingScreen : MonoBehaviour
         var ui = MakeCanvas("PlayingUI", 150);
         string w = !GameConfig.WeatherEnabled ? "clear skies"
                  : GameConfig.StormLocked ? "in a storm" : "weather rolling through";
-        MakeButton(ui.transform, "Menu", new Vector2(-390, 850), new Vector2(210, 92), Back);
-        Panel(ui.transform, new Vector2(80, 850), new Vector2(680, 96), new Color(1f, 1f, 1f, 0.22f));
-        Label(ui.transform, GameConfig.Biome + "   ·   " + GameConfig.Period + "   ·   " + w, new Vector2(80, 850), 32, Color.white);
+        MakeButton(ui.transform, "Menu", new Vector2(-340, 845), new Vector2(260, 150), Back);
+        Panel(ui.transform, new Vector2(160, 845), new Vector2(560, 96), new Color(1f, 1f, 1f, 0.22f));
+        Label(ui.transform, GameConfig.Biome + "   ·   " + GameConfig.Period + "   ·   " + w, new Vector2(160, 845), 30, Color.white);
         Label(ui.transform, "close your eyes and walk", new Vector2(0, 120), 36, new Color(1f, 1f, 1f, 0.9f));
     }
 
@@ -101,7 +101,7 @@ public class PlayingScreen : MonoBehaviour
     {
         var go = new GameObject("Btn_" + text, typeof(RectTransform)); go.transform.SetParent(parent, false);
         var rt = go.GetComponent<RectTransform>(); rt.sizeDelta = size; rt.anchoredPosition = pos;
-        var img = go.AddComponent<Image>(); img.color = new Color(1f, 1f, 1f, 0.1f); // near-transparent, still catches taps
+        var img = go.AddComponent<Image>(); img.color = new Color(0f, 0f, 0f, 0.32f); // visible rounded-ish tap target so the whole area is obviously clickable
         var btn = go.AddComponent<Button>(); btn.targetGraphic = img; btn.onClick.AddListener(() => onClick());
         var t = new GameObject("Text", typeof(RectTransform)); t.transform.SetParent(go.transform, false);
         var trt = t.GetComponent<RectTransform>(); trt.anchorMin = Vector2.zero; trt.anchorMax = Vector2.one; trt.sizeDelta = Vector2.zero;
