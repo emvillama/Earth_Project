@@ -20,23 +20,25 @@ public class TouchControls : MonoBehaviour, IInputSource
     public float LookX { get; private set; }
     public float LookY { get; private set; }
 
-    private RectTransform leftKnob, rightKnob;
+    private RectTransform leftBase, rightBase, leftKnob, rightKnob, leftLbl, rightLbl;
     private Vector2 leftCenter, rightCenter; // screen px
     private float radius;
     private int leftFinger = -1, rightFinger = -1;
     private int mouseSide = -1; // editor mouse-as-touch: 0 = left stick, 1 = right stick
+    private int lastW = -1, lastH = -1;
 
     void Start()
     {
-        radius = Mathf.Min(Screen.width, Screen.height) * radiusFraction;
-        float margin = radius * 1.5f;
-        leftCenter = new Vector2(margin, margin);
-        rightCenter = new Vector2(Screen.width - margin, margin);
         BuildUI();
+        Layout();
     }
 
     void Update()
     {
+        // On the first frame(s) iOS can report a stale screen size, which parked the right (Look)
+        // stick off-screen until a scene reload. Re-layout whenever the size settles or rotates.
+        if (Screen.width != lastW || Screen.height != lastH) Layout();
+
         if (!GameConfig.Configured) return; // dormant while the main menu is up
 
         Horizontal = Vertical = LookX = LookY = 0f;
@@ -109,6 +111,29 @@ public class TouchControls : MonoBehaviour, IInputSource
         return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(fingerId);
     }
 
+    // Recompute the stick geometry from the current screen size and (re)position both sticks. Safe to
+    // call every frame; cheap. Called on start and whenever the screen size changes.
+    private void Layout()
+    {
+        lastW = Screen.width; lastH = Screen.height;
+        radius = Mathf.Min(Screen.width, Screen.height) * radiusFraction;
+        float margin = radius * 1.5f;
+        leftCenter = new Vector2(margin, margin);
+        rightCenter = new Vector2(Screen.width - margin, margin);
+        Place(leftBase, leftKnob, leftLbl, leftCenter);
+        Place(rightBase, rightKnob, rightLbl, rightCenter);
+    }
+
+    private void Place(RectTransform baseRt, RectTransform knob, RectTransform lbl, Vector2 center)
+    {
+        if (baseRt == null) return;
+        baseRt.sizeDelta = new Vector2(radius * 2f, radius * 2f);
+        baseRt.anchoredPosition = center;
+        knob.sizeDelta = new Vector2(radius * 0.9f, radius * 0.9f);
+        lbl.sizeDelta = new Vector2(radius * 2f, 50f);
+        lbl.anchoredPosition = new Vector2(center.x, center.y - radius - 34f);
+    }
+
     private void BuildUI()
     {
         var cgo = new GameObject("TouchControlsCanvas");
@@ -122,40 +147,35 @@ public class TouchControls : MonoBehaviour, IInputSource
         Sprite dot = CircleSprite(96, new Color(1f, 1f, 1f, 0.78f));
         Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
-        leftKnob = Stick(cgo.transform, leftCenter, ring, dot, "Move", font);
-        rightKnob = Stick(cgo.transform, rightCenter, ring, dot, "Look", font);
+        Stick(cgo.transform, ring, dot, "Move", font, out leftBase, out leftKnob, out leftLbl);
+        Stick(cgo.transform, ring, dot, "Look", font, out rightBase, out rightKnob, out rightLbl);
     }
 
-    // A stick = base ring at `center` (screen px) + a knob (returned) + a label under it.
-    private RectTransform Stick(Transform parent, Vector2 center, Sprite ring, Sprite dot, string label, Font font)
+    // A stick = base ring + a knob + a label under it. Positions are set later by Layout() so they
+    // always track the live screen size.
+    private void Stick(Transform parent, Sprite ring, Sprite dot, string label, Font font,
+                       out RectTransform baseRt, out RectTransform knob, out RectTransform lbl)
     {
         var baseGo = new GameObject("Base_" + label, typeof(RectTransform));
         baseGo.transform.SetParent(parent, false);
-        var brt = baseGo.GetComponent<RectTransform>();
-        brt.anchorMin = brt.anchorMax = Vector2.zero; // bottom-left → anchoredPosition is screen px
-        brt.sizeDelta = new Vector2(radius * 2f, radius * 2f);
-        brt.anchoredPosition = center;
+        baseRt = baseGo.GetComponent<RectTransform>();
+        baseRt.anchorMin = baseRt.anchorMax = Vector2.zero; // bottom-left → anchoredPosition is screen px
         Img(baseGo, ring);
 
         var knobGo = new GameObject("Knob", typeof(RectTransform));
         knobGo.transform.SetParent(baseGo.transform, false);
-        var krt = knobGo.GetComponent<RectTransform>();
-        krt.sizeDelta = new Vector2(radius * 0.9f, radius * 0.9f);
-        krt.anchoredPosition = Vector2.zero;
+        knob = knobGo.GetComponent<RectTransform>();
+        knob.anchoredPosition = Vector2.zero;
         Img(knobGo, dot);
 
         var lblGo = new GameObject("Lbl_" + label, typeof(RectTransform));
         lblGo.transform.SetParent(parent, false);
-        var lrt = lblGo.GetComponent<RectTransform>();
-        lrt.anchorMin = lrt.anchorMax = Vector2.zero;
-        lrt.sizeDelta = new Vector2(radius * 2f, 50f);
-        lrt.anchoredPosition = new Vector2(center.x, center.y - radius - 34f);
+        lbl = lblGo.GetComponent<RectTransform>();
+        lbl.anchorMin = lbl.anchorMax = Vector2.zero;
         var txt = lblGo.AddComponent<Text>();
         txt.text = label; txt.font = font; txt.fontSize = 36; txt.alignment = TextAnchor.MiddleCenter;
         txt.color = new Color(1f, 1f, 1f, 0.95f);
         var sh = lblGo.AddComponent<Shadow>(); sh.effectColor = new Color(0, 0, 0, 0.55f); sh.effectDistance = new Vector2(1, -1);
-
-        return krt;
     }
 
     private static void Img(GameObject go, Sprite s)
