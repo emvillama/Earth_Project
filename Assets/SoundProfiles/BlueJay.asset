@@ -18,10 +18,6 @@ MonoBehaviour:
   clips:
   - clip: {fileID: 8300000, guid: c3b8ba75bc9babe4ca10ad8f4ab71217, type: 3}
     weight: 1
-  - clip: {fileID: 8300000, guid: e90633ecf43054b7fb872e544be3eae9, type: 3}
-    weight: 1
-  - clip: {fileID: 8300000, guid: ec491889c19d545dbacdf2856753a87f, type: 3}
-    weight: 1
   - clip: {fileID: 8300000, guid: d22fc1657a59c443db241a59e641b341, type: 3}
     weight: 1
   - clip: {fileID: 8300000, guid: 9cbb0580d13e4141bd5e54f4a749a8d4, type: 3}

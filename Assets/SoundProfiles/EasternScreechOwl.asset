@@ -14,15 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   displayName: Eastern Screech-Owl
   activePeriods: 8
-  enabled: 1
+  enabled: 0
   layer: 1
   clips:
-  - clip: {fileID: 8300000, guid: 20c81dd33e6c1fcf31caed2340fa81df, type: 3}
-    weight: 1
-  - clip: {fileID: 8300000, guid: d34d497c3c0c54946929bd7d3c04da37, type: 3}
-    weight: 1
-  - clip: {fileID: 8300000, guid: 9c860abbc640e4e4bbbb950fd499e79c, type: 3}
-    weight: 1
   spawnWeight: 4
   maxConcurrent: 2
   minHeight: 5

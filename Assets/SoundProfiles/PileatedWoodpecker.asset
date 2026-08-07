@@ -14,11 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   displayName: Pileated Woodpecker
   activePeriods: 7
-  enabled: 1
+  enabled: 0
   layer: 1
   clips:
-  - clip: {fileID: 8300000, guid: 5f0ff563f9512c98ba9757a7d07b7a6a, type: 3}
-    weight: 1
   spawnWeight: 3
   maxConcurrent: 1
   minHeight: 5

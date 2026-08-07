@@ -19,10 +19,6 @@ MonoBehaviour:
   clips:
   - clip: {fileID: 8300000, guid: ea3edb64392ddb625f134733ce3c75ca, type: 3}
     weight: 1
-  - clip: {fileID: 8300000, guid: ebea0fd2b510444b3861b23fa78615e5, type: 3}
-    weight: 1
-  - clip: {fileID: 8300000, guid: ccdbee8ab1a644e999c77eff514c9dc0, type: 3}
-    weight: 1
   spawnWeight: 4
   maxConcurrent: 2
   minHeight: 3

@@ -17,12 +17,6 @@ MonoBehaviour:
   enabled: 0
   layer: 1
   clips:
-  - clip: {fileID: 8300000, guid: f36f94cb75610ac3097623ce7a8b4021, type: 3}
-    weight: 1
-  - clip: {fileID: 8300000, guid: 6835a9de5bd944786869f001f4269c09, type: 3}
-    weight: 1
-  - clip: {fileID: 8300000, guid: d6a06eb6043d54d3d8bce0c55faf5974, type: 3}
-    weight: 1
   - clip: {fileID: 8300000, guid: ba807d4ce40a4daa85840709ed6f7367, type: 3}
     weight: 1
   spawnWeight: 4
