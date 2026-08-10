@@ -19,12 +19,12 @@ MonoBehaviour:
   rndTimeMax: 10
   maxVoices: 20
   fadeInDuration: 0.05
-  fadeOutDuration: 0.25
+  fadeOutDuration: 0.6
   minDistance: 3
   audibleRadius: 80
-  playerExclusionRadius: 10
-  densityContrast: 0.5
-  densityScale: 40
+  playerExclusionRadius: 12
+  densityContrast: 0.75
+  densityScale: 60
   spawnIntervalMin: 1
   spawnIntervalMax: 3
   spawnsPerPeriod: 3
