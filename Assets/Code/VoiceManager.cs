@@ -15,6 +15,9 @@ public class VoiceManager : MonoBehaviour
     public float evaluateInterval = 0.25f;
 
     private static VoiceManager _instance;
+    public static bool HasInstance => _instance != null;      // read without spawning one (for the HUD)
+    public int AudibleVoices => Mathf.Min(active.Count, maxVoices); // voices allowed to sound right now
+    public int TrackedVoices => active.Count;                 // total registered sound-objects
     public static VoiceManager Instance
     {
         get

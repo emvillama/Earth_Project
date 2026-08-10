@@ -216,6 +216,11 @@ public class ItemSpawner : MonoBehaviour
         enableWeather = GameConfig.WeatherEnabled;
         weather.formChance = GameConfig.WeatherChance;
 
+        // 3.2: frame-rate cap + on-device performance overlay (FPS / voices / objects).
+        var perfGo = new GameObject("PerfHud");
+        var hud = perfGo.AddComponent<PerfHud>();
+        hud.spawner = this;
+
         ManageItems(Time.realtimeSinceStartup);
     }
 
@@ -318,6 +323,10 @@ public class ItemSpawner : MonoBehaviour
         int c = CurrentCount(p) + delta;
         activeCounts[p] = c < 0 ? 0 : c;
     }
+
+    // Live counts for the performance HUD (3.2).
+    public int ActiveItems => itemPos != null ? itemPos.Count : 0;
+    public int PooledObjects => pool != null ? pool.CountInactive : 0;
 
     // Called by ItemAudioManager once its fade-out completes.
     public void ReleaseToPool(GameObject o)
