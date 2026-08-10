@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: Woodpecker
   activePeriods: 7
-  enabled: 0
+  enabled: 1
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: 9e48d0b36fd080e42a08ea926d923b7e, type: 3}

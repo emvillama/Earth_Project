@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: AmericanCrow
   m_EditorClassIdentifier: 
   displayName: AmericanCrow
-  enabled: 0
+  enabled: 1
   layer: 1
   activePeriods: 7
   clips:

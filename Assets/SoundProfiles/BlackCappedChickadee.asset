@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: BlackCappedChickadee
   activePeriods: 7
-  enabled: 0
+  enabled: 1
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: ae26abe288e9a4c0795ae248ff28d5c0, type: 3}

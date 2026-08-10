@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: WoodThrush
   activePeriods: 7
-  enabled: 0
+  enabled: 1
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: d4bbf4c13442340f39e136412a87487d, type: 3}

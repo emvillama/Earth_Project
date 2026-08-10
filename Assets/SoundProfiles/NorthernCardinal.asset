@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   displayName: NorthernCardinal
   activePeriods: 7
-  enabled: 0
+  enabled: 1
   layer: 1
   clips:
   - clip: {fileID: 8300000, guid: 3179f31ece435730e285f3f904ec7b08, type: 3}

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Squirrel
   m_EditorClassIdentifier: 
   displayName: Squirrel
-  enabled: 1
+  enabled: 0
   layer: 2
   clips:
   - clip: {fileID: 8300000, guid: 32a635d4b1b1b467783a729019df75e8, type: 3}

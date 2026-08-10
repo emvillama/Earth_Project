@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Deer
   m_EditorClassIdentifier: 
   displayName: Deer
-  enabled: 1
+  enabled: 0
   layer: 2
   clips:
   - clip: {fileID: 8300000, guid: f9b397cdf568445fdb7e8935d50bcaef, type: 3}
