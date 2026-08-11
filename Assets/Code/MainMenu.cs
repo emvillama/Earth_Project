@@ -148,6 +148,8 @@ public class MainMenu : MonoBehaviour
         Select(1, startStorm ? 1 : 0);    // Rainy vs Sunny
         Select(2, TimeIndex(period));
         TintGlobe();
+
+        HeadphonePrompt.ShowOnce(font); // one-time "wear headphones" nudge over the menu
     }
 
     private static int TimeIndex(DayPeriod p)
